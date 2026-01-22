@@ -12,6 +12,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const THEME_STORAGE_KEY = "theme";
 
@@ -93,6 +99,34 @@ function App() {
                 {isLoading ? "Greeting..." : "Greet"}
               </Button>
             </form>
+
+            <div className="mt-6">
+              <h2 className="mb-2 text-sm font-medium">FAQ</h2>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>What is shadcn/ui?</AccordionTrigger>
+                  <AccordionContent>
+                    It ships components as source code, so you can customize them freely.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                  <AccordionTrigger>Where are components stored?</AccordionTrigger>
+                  <AccordionContent>
+                    In <code className="font-mono text-xs">src/components/ui</code>.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                  <AccordionTrigger>How do I add more components?</AccordionTrigger>
+                  <AccordionContent>
+                    Run{" "}
+                    <code className="font-mono text-xs">
+                      bunx --bun shadcn@latest add &lt;component&gt;
+                    </code>
+                    .
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </div>
           </CardContent>
 
           <CardFooter>

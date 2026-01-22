@@ -25,6 +25,13 @@ describe("App", () => {
 
     expect(button).toBeDisabled();
 
+    const firstAccordionTrigger = screen.getByRole("button", {
+      name: "What is shadcn/ui?",
+    });
+    expect(firstAccordionTrigger).toHaveAttribute("aria-expanded", "false");
+    await user.click(firstAccordionTrigger);
+    expect(firstAccordionTrigger).toHaveAttribute("aria-expanded", "true");
+
     await user.type(input, "Alice");
     expect(button).toBeEnabled();
 

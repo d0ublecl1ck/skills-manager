@@ -1,50 +1,106 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { Loader2, Moon, Sun } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+
+const THEME_STORAGE_KEY = "theme";
+
+type Theme = "light" | "dark";
+
+function getInitialTheme(): Theme {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ? "dark" : "light";
+}
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [greetMsg, setGreetMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "light";
+    return getInitialTheme();
+  });
 
   async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+    try {
+      setIsLoading(true);
+      setGreetMsg(await invoke<string>("greet", { name }));
+    } finally {
+      setIsLoading(false);
+    }
   }
 
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="min-h-screen">
+      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold tracking-tight">Tauri + React</h1>
+          <p className="text-sm text-muted-foreground">
+            shadcn/ui + Tailwind + lucide-react
+          </p>
+        </div>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Toggle theme"
+          onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+        >
+          {theme === "dark" ? <Sun /> : <Moon />}
+        </Button>
+      </header>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      <main className="mx-auto flex w-full max-w-3xl flex-1 px-6 pb-10">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Greeting</CardTitle>
+            <CardDescription>Call a Rust command via Tauri.</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form
+              className="grid gap-3"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void greet();
+              }}
+            >
+              <Input
+                id="greet-input"
+                value={name}
+                onChange={(e) => setName(e.currentTarget.value)}
+                placeholder="Enter a name..."
+              />
+              <Button type="submit" disabled={isLoading || !name.trim()}>
+                {isLoading ? <Loader2 className="animate-spin" /> : null}
+                {isLoading ? "Greeting..." : "Greet"}
+              </Button>
+            </form>
+          </CardContent>
+
+          <CardFooter>
+            <p className="text-sm text-muted-foreground">{greetMsg}</p>
+          </CardFooter>
+        </Card>
+      </main>
+    </div>
   );
 }
 

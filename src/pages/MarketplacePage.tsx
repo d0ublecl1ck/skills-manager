@@ -71,13 +71,13 @@ const MarketplacePage: React.FC = () => {
         <h2 className="text-[36px] font-bold text-black tracking-tight leading-none">安装新技能</h2>
         <p className="text-slate-500 text-[16px]">输入 GitHub 仓库地址或技能包网址，一键自动安装并分发。</p>
         
-        <div className="mt-10 flex gap-2 bg-white vercel-border p-1.5 rounded-lg shadow-sm focus-within:border-black transition-all">
+        <div className="mt-10 flex gap-2 bg-white border border-[#eaeaea] p-1.5 rounded-xl shadow-sm transition-all duration-200 focus-within:border-black focus-within:ring-[4px] focus-within:ring-slate-100">
           <div className="flex-1 flex items-center px-4 gap-3">
              <ICONS.Github size={20} className="text-slate-400" />
              <input 
               type="text" 
               placeholder="github.com/用户/仓库 或 https://example.com/skill.zip"
-              className="w-full bg-transparent border-none focus:ring-0 text-[14px] text-slate-800 placeholder-slate-400"
+              className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] text-slate-800 placeholder-slate-400"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleInstall()}

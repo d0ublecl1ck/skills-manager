@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tauri::Manager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,18 +42,6 @@ fn now_iso() -> String {
     now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-fn app_store_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let base = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to resolve app data dir: {e}"))?;
-    Ok(base.join("skills-store"))
-}
-
-fn skills_store_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
-    Ok(app_store_root(app)?.join("skills"))
-}
-
 fn home_dir() -> Option<PathBuf> {
     std::env::var("HOME")
         .ok()
@@ -79,6 +67,16 @@ fn expand_tilde(path: &str) -> PathBuf {
     PathBuf::from(trimmed)
 }
 
+fn manager_store_root(storage_path: &str) -> Result<PathBuf, String> {
+    let trimmed = storage_path.trim();
+    if trimmed.is_empty() {
+        return Err("storagePath is empty".to_string());
+    }
+    let root = expand_tilde(trimmed);
+    ensure_dir(&root)?;
+    Ok(root)
+}
+
 fn safe_skill_dir_name(name: &str) -> String {
     let trimmed = name.trim();
     if trimmed.is_empty() {
@@ -89,6 +87,74 @@ fn safe_skill_dir_name(name: &str) -> String {
         .replace("..", "")
         .trim()
         .to_string()
+}
+
+fn unique_skill_dir_name(root: &Path, desired: &str) -> String {
+    let base = safe_skill_dir_name(desired);
+    let mut candidate = base.clone();
+    let mut idx = 2;
+    while root.join(&candidate).exists() {
+        candidate = format!("{base}-{idx}");
+        idx += 1;
+    }
+    candidate
+}
+
+fn dir_contains_skill_md(dir: &Path) -> bool {
+    let entries = match fs::read_dir(dir) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+
+    for entry in entries.flatten() {
+        let file_type = match entry.file_type() {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if !file_type.is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.eq_ignore_ascii_case("skill.md") {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn find_skill_roots(root: &Path) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = vec![];
+    let mut stack: Vec<PathBuf> = vec![root.to_path_buf()];
+
+    while let Some(dir) = stack.pop() {
+        if !dir.is_dir() {
+            continue;
+        }
+
+        if dir_contains_skill_md(&dir) {
+            roots.push(dir);
+            continue;
+        }
+
+        let entries = match fs::read_dir(&dir) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.is_empty() || name.starts_with('.') {
+                continue;
+            }
+            stack.push(path);
+        }
+    }
+
+    roots
 }
 
 fn ensure_dir(path: &Path) -> Result<(), String> {
@@ -151,7 +217,7 @@ fn parse_metadata_from_dir(dir: &Path, fallback_name: &str) -> (String, String, 
     let mut description = "No description available.".to_string();
     let mut tags: Vec<String> = vec![];
 
-    let candidates = ["SKILL.md", "README.md", "README.MD"];
+    let candidates = ["SKILL.md", "skill.md", "README.md", "README.MD", "readme.md"];
     let mut content: Option<String> = None;
     for file in candidates {
         let path = dir.join(file);
@@ -281,12 +347,11 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn bootstrap_skills_store(app: tauri::AppHandle, skills: Vec<Skill>) -> Result<(), String> {
-    let dir = skills_store_dir(&app)?;
-    ensure_dir(&dir)?;
+fn bootstrap_skills_store(skills: Vec<Skill>, storage_path: String) -> Result<(), String> {
+    let dir = manager_store_root(&storage_path)?;
 
     for skill in skills {
-        let skill_dir = dir.join(&skill.id);
+        let skill_dir = dir.join(safe_skill_dir_name(&skill.name));
         if skill_dir.exists() {
             continue;
         }
@@ -299,18 +364,18 @@ fn bootstrap_skills_store(app: tauri::AppHandle, skills: Vec<Skill>) -> Result<(
 }
 
 #[tauri::command]
-fn install_skill(app: tauri::AppHandle, repo_url: String) -> Result<Skill, String> {
+fn install_skill(repo_url: String, storage_path: String) -> Result<Skill, String> {
     let url = normalize_install_url(&repo_url);
     let lower = url.to_lowercase();
     let skill_id = generate_id();
-    let store_dir = skills_store_dir(&app)?;
-    ensure_dir(&store_dir)?;
-    let dest = store_dir.join(&skill_id);
+    let store_dir = manager_store_root(&storage_path)?;
+    let temp_dest = store_dir.join(format!(".tmp-install-{skill_id}"));
+    let _ = remove_dir_if_exists(&temp_dest);
 
     if lower.ends_with(".zip") || lower.contains(".zip?") {
-        install_zip(&url, &dest)?;
+        install_zip(&url, &temp_dest)?;
     } else {
-        install_git(&url, &dest)?;
+        install_git(&url, &temp_dest)?;
     }
 
     let fallback_name = url
@@ -319,7 +384,14 @@ fn install_skill(app: tauri::AppHandle, repo_url: String) -> Result<Skill, Strin
         .unwrap_or("skill")
         .trim_end_matches(".git")
         .trim_end_matches(".zip");
-    let (name, description, tags) = parse_metadata_from_dir(&dest, fallback_name);
+    let (meta_name, description, tags) = parse_metadata_from_dir(&temp_dest, fallback_name);
+    let dir_name = unique_skill_dir_name(&store_dir, &meta_name);
+    let final_dest = store_dir.join(&dir_name);
+
+    if let Err(_e) = fs::rename(&temp_dest, &final_dest) {
+        copy_dir_all(&temp_dest, &final_dest)?;
+        let _ = fs::remove_dir_all(&temp_dest);
+    }
 
     let author = if url.contains("github.com/") {
         url.split('/')
@@ -338,7 +410,7 @@ fn install_skill(app: tauri::AppHandle, repo_url: String) -> Result<Skill, Strin
 
     Ok(Skill {
         id: skill_id,
-        name,
+        name: dir_name,
         description,
         author,
         source,
@@ -354,13 +426,12 @@ fn skill_dest_for_agent(agent: &AgentInfo, skill_name: &str) -> PathBuf {
     expand_tilde(&agent.current_path).join(safe_skill_dir_name(skill_name))
 }
 
-fn sync_one_skill(app: &tauri::AppHandle, skill_id: &str, skill_name: &str, enabled: &[String], agents: &[AgentInfo]) -> Result<(), String> {
-    let store_dir = skills_store_dir(app)?;
-    let src = store_dir.join(skill_id);
+fn sync_one_skill(store_root: &Path, skill_name: &str, enabled: &[String], agents: &[AgentInfo]) -> Result<(), String> {
+    let src = store_root.join(safe_skill_dir_name(skill_name));
     if !src.exists() {
         return Err(format!(
-            "Skill store not found for id={skill_id} at {}",
-            src.display()
+            "Skill store not found for name={skill_name} at {}",
+            src.display(),
         ));
     }
 
@@ -379,27 +450,31 @@ fn sync_one_skill(app: &tauri::AppHandle, skill_id: &str, skill_name: &str, enab
 
 #[tauri::command]
 fn sync_skill_distribution(
-    app: tauri::AppHandle,
     skill_id: String,
     skill_name: String,
     enabled_agents: Vec<String>,
     agents: Vec<AgentInfo>,
+    storage_path: String,
 ) -> Result<(), String> {
-    sync_one_skill(&app, &skill_id, &skill_name, &enabled_agents, &agents)
+    let _ = skill_id;
+    let store_root = manager_store_root(&storage_path)?;
+    sync_one_skill(&store_root, &skill_name, &enabled_agents, &agents)
 }
 
 #[tauri::command]
-fn sync_all_skills_distribution(app: tauri::AppHandle, skills: Vec<Skill>, agents: Vec<AgentInfo>) -> Result<(), String> {
+fn sync_all_skills_distribution(skills: Vec<Skill>, agents: Vec<AgentInfo>, storage_path: String) -> Result<(), String> {
+    let store_root = manager_store_root(&storage_path)?;
     for skill in skills {
-        sync_one_skill(&app, &skill.id, &skill.name, &skill.enabled_agents, &agents)?;
+        sync_one_skill(&store_root, &skill.name, &skill.enabled_agents, &agents)?;
     }
     Ok(())
 }
 
 #[tauri::command]
-fn uninstall_skill(app: tauri::AppHandle, skill_id: String, skill_name: String, agents: Vec<AgentInfo>) -> Result<(), String> {
-    let store_dir = skills_store_dir(&app)?;
-    let src = store_dir.join(&skill_id);
+fn uninstall_skill(skill_id: String, skill_name: String, agents: Vec<AgentInfo>, storage_path: String) -> Result<(), String> {
+    let _ = skill_id;
+    let store_root = expand_tilde(&storage_path);
+    let src = store_root.join(safe_skill_dir_name(&skill_name));
     let _ = remove_dir_if_exists(&src);
 
     for agent in agents {
@@ -411,9 +486,79 @@ fn uninstall_skill(app: tauri::AppHandle, skill_id: String, skill_name: String, 
 }
 
 #[tauri::command]
-fn reset_store(app: tauri::AppHandle) -> Result<(), String> {
-    let root = app_store_root(&app)?;
+fn reset_store(storage_path: String) -> Result<(), String> {
+    let root = expand_tilde(&storage_path);
     remove_dir_if_exists(&root)
+}
+
+#[tauri::command]
+fn sync_all_to_manager_store(agents: Vec<AgentInfo>, storage_path: String) -> Result<Vec<Skill>, String> {
+    let store_root = manager_store_root(&storage_path)?;
+    let mut found: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
+    for agent in &agents {
+        let agent_root = expand_tilde(&agent.current_path);
+        if !agent_root.exists() || !agent_root.is_dir() {
+            continue;
+        }
+
+        for skill_root in find_skill_roots(&agent_root) {
+            let name = skill_root
+                .file_name()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_default();
+            if name.is_empty() || name.starts_with('.') {
+                continue;
+            }
+
+            let key = safe_skill_dir_name(&name);
+            let dst = store_root.join(&key);
+            if !dst.exists() {
+                copy_dir_all(&skill_root, &dst)?;
+            }
+
+            found.entry(key).or_default().insert(agent.id.clone());
+        }
+    }
+
+    let mut skills: Vec<Skill> = vec![];
+    for entry in fs::read_dir(&store_root)
+        .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("Failed to read file type: {e}"))?;
+        if !file_type.is_dir() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.is_empty() || name.starts_with('.') {
+            continue;
+        }
+
+        let dir = entry.path();
+        let (_meta_name, description, tags) = parse_metadata_from_dir(&dir, &name);
+        let enabled_agents = found
+            .get(&name)
+            .map(|s| s.iter().cloned().collect())
+            .unwrap_or_else(Vec::new);
+
+        skills.push(Skill {
+            id: name.clone(),
+            name: name.clone(),
+            description,
+            author: "本地导入".to_string(),
+            source: "local".to_string(),
+            source_url: None,
+            tags,
+            enabled_agents,
+            last_sync: Some(now_iso()),
+            is_adopted: true,
+        });
+    }
+
+    Ok(skills)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -425,6 +570,7 @@ pub fn run() {
             install_skill,
             sync_skill_distribution,
             sync_all_skills_distribution,
+            sync_all_to_manager_store,
             uninstall_skill,
             reset_store
         ])

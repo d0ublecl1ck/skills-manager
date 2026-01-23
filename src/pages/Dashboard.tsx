@@ -6,9 +6,12 @@ import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
 import { Search } from 'lucide-react';
+import { syncAllToManagerStore } from '../services/tauriClient';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
+  const mergeSkills = useSkillStore(state => state.mergeSkills);
+  const addLog = useSkillStore(state => state.addLog);
   const agents = useAgentStore(state => state.agents);
   
   const [search, setSearch] = useState('');
@@ -25,6 +28,27 @@ const Dashboard: React.FC = () => {
     });
   }, [skills, search, selectedAgent]);
 
+  const handleSyncAll = async () => {
+    try {
+      const synced = await syncAllToManagerStore(agents);
+      mergeSkills(synced);
+      addLog({
+        action: 'sync',
+        skillId: '全量同步',
+        status: 'success',
+        message: `同步完成：已识别 ${synced.length} 个技能目录`
+      });
+    } catch (e) {
+      console.error(e);
+      addLog({
+        action: 'sync',
+        skillId: '全量同步',
+        status: 'error',
+        message: `同步失败: ${e instanceof Error ? e.message : '未知错误'}`
+      });
+    }
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -33,7 +57,10 @@ const Dashboard: React.FC = () => {
           <p className="text-slate-500 text-[15px]">管理并分发您的本地 AI Agent 技能资产。</p>
         </div>
         <div className="flex gap-3">
-          <button className="bg-white border border-[#eaeaea] hover:border-black text-black px-5 py-2 rounded-lg text-[13px] font-semibold transition-all">
+          <button 
+            onClick={handleSyncAll}
+            className="bg-white border border-[#eaeaea] hover:border-black text-black px-5 py-2 rounded-lg text-[13px] font-semibold transition-all"
+          >
             同步全部
           </button>
           <button className="bg-black border border-black hover:bg-white hover:text-black text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]">

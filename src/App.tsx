@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import MarketplacePage from './pages/MarketplacePage';
 import AgentsPage from './pages/AgentsPage';
 import SettingsPage from './pages/SettingsPage';
+import OnboardingModal from './components/OnboardingModal';
 import { bootstrapSkillsStore } from './services/tauriClient';
 import { useSkillStore } from './stores/useSkillStore';
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </Layout>
+      <OnboardingModal />
     </Router>
   );
 };

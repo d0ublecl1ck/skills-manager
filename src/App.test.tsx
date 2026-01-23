@@ -12,6 +12,14 @@ vi.mock("@tauri-apps/api/core", () => ({
 
 describe("App", () => {
   it("renders dashboard and can install a skill via tauri invoke", async () => {
+    window.localStorage.setItem(
+      "settings-manager-storage-v1",
+      JSON.stringify({
+        state: { storagePath: "~/.skillsm", hasCompletedOnboarding: true },
+        version: 0,
+      }),
+    );
+
     const installedSkill: Skill = {
       id: "test-skill",
       name: "Test Skill",
@@ -50,6 +58,7 @@ describe("App", () => {
 
     expect(vi.mocked(invoke)).toHaveBeenCalledWith("install_skill", {
       repoUrl: "github.com/foo/bar",
+      storagePath: "~/.skillsm",
     });
     expect(screen.getByRole("button", { name: "正在安装..." })).toBeInTheDocument();
 

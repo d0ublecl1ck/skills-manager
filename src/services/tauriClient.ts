@@ -1,13 +1,16 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import type { AgentInfo, Skill } from '../types';
+import { useSettingsStore } from '../stores/useSettingsStore';
+
+const storagePath = () => useSettingsStore.getState().storagePath;
 
 export const bootstrapSkillsStore = async (skills: Skill[]) => {
-  await invoke('bootstrap_skills_store', { skills });
+  await invoke('bootstrap_skills_store', { skills, storagePath: storagePath() });
 };
 
 export const installSkill = async (repoUrl: string): Promise<Skill> => {
-  return await invoke<Skill>('install_skill', { repoUrl });
+  return await invoke<Skill>('install_skill', { repoUrl, storagePath: storagePath() });
 };
 
 export const syncSkillDistribution = async (skill: Skill, agents: AgentInfo[]) => {
@@ -16,11 +19,12 @@ export const syncSkillDistribution = async (skill: Skill, agents: AgentInfo[]) =
     skillName: skill.name,
     enabledAgents: skill.enabledAgents,
     agents,
+    storagePath: storagePath(),
   });
 };
 
 export const syncAllSkillsDistribution = async (skills: Skill[], agents: AgentInfo[]) => {
-  await invoke('sync_all_skills_distribution', { skills, agents });
+  await invoke('sync_all_skills_distribution', { skills, agents, storagePath: storagePath() });
 };
 
 export const uninstallSkill = async (skill: Skill, agents: AgentInfo[]) => {
@@ -28,10 +32,14 @@ export const uninstallSkill = async (skill: Skill, agents: AgentInfo[]) => {
     skillId: skill.id,
     skillName: skill.name,
     agents,
+    storagePath: storagePath(),
   });
 };
 
 export const resetStore = async () => {
-  await invoke('reset_store');
+  await invoke('reset_store', { storagePath: storagePath() });
 };
 
+export const syncAllToManagerStore = async (agents: AgentInfo[]): Promise<Skill[]> => {
+  return await invoke<Skill[]>('sync_all_to_manager_store', { agents, storagePath: storagePath() });
+};

@@ -8,6 +8,8 @@ import { useAgentStore } from './useAgentStore';
 interface SkillState {
   skills: Skill[];
   logs: OperationLog[];
+  setSkills: (skills: Skill[]) => void;
+  mergeSkills: (skills: Skill[]) => void;
   addSkill: (skill: Skill) => void;
   removeSkill: (skillId: string) => void;
   updateSkill: (skillId: string, updates: Partial<Skill>) => void;
@@ -58,6 +60,22 @@ export const useSkillStore = create<SkillState>()(
     (set) => ({
       skills: INITIAL_SKILLS,
       logs: [],
+      setSkills: (skills) => set({ skills }),
+      mergeSkills: (incoming) => set((state) => {
+        const incomingByName = new Map(incoming.map((s) => [s.name, s]));
+        const merged = state.skills.map((existing) => {
+          const next = incomingByName.get(existing.name);
+          if (!next) return existing;
+          incomingByName.delete(existing.name);
+          return {
+            ...existing,
+            enabledAgents: Array.from(new Set([...existing.enabledAgents, ...next.enabledAgents])),
+            lastSync: next.lastSync ?? existing.lastSync,
+          };
+        });
+        for (const next of incomingByName.values()) merged.push(next);
+        return { skills: merged };
+      }),
       addSkill: (skill) => set((state) => ({ skills: [...state.skills, skill] })),
       removeSkill: (skillId) => set((state) => {
         const skill = state.skills.find((s) => s.id === skillId);

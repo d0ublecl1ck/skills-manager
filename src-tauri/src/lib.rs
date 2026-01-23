@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::Emitter;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -33,6 +34,15 @@ struct AgentInfo {
     current_path: String,
     enabled: bool,
     icon: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SyncAllToManagerProgressLog {
+    id: String,
+    label: String,
+    status: String,
+    progress: f64,
 }
 
 fn now_iso() -> String {
@@ -493,72 +503,154 @@ fn reset_store(storage_path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn sync_all_to_manager_store(agents: Vec<AgentInfo>, storage_path: String) -> Result<Vec<Skill>, String> {
-    let store_root = manager_store_root(&storage_path)?;
-    let mut found: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    sync_all_to_manager_store_inner(None, agents, storage_path)
+}
 
-    for agent in &agents {
-        let agent_root = expand_tilde(&agent.current_path);
-        if !agent_root.exists() || !agent_root.is_dir() {
-            continue;
+#[tauri::command]
+fn sync_all_to_manager_store_with_progress(
+    app: tauri::AppHandle,
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<Vec<Skill>, String> {
+    sync_all_to_manager_store_inner(Some(app), agents, storage_path)
+}
+
+fn sync_all_to_manager_store_inner(
+    app: Option<tauri::AppHandle>,
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<Vec<Skill>, String> {
+    let emit = |payload: SyncAllToManagerProgressLog| {
+        if let Some(app) = &app {
+            let _ = app.emit("sync_all_to_manager_store:progress", payload);
+        }
+    };
+
+    emit(SyncAllToManagerProgressLog {
+        id: "init".to_string(),
+        label: "正在初始化中心库索引...".to_string(),
+        status: "loading".to_string(),
+        progress: 0.0,
+    });
+
+    let result = (|| -> Result<Vec<Skill>, String> {
+        let store_root = manager_store_root(&storage_path)?;
+        let mut found: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
+        emit(SyncAllToManagerProgressLog {
+            id: "init".to_string(),
+            label: "正在初始化中心库索引...".to_string(),
+            status: "success".to_string(),
+            progress: 15.0,
+        });
+
+        let total = agents.len().max(1) as f64;
+        for (idx, agent) in agents.iter().enumerate() {
+            let id = format!("extract-{}", agent.id);
+            let start_progress = 15.0 + (idx as f64 / total) * 70.0;
+            emit(SyncAllToManagerProgressLog {
+                id: id.clone(),
+                label: format!("正在从 {} 目录提取技能资产...", agent.name),
+                status: "loading".to_string(),
+                progress: start_progress,
+            });
+
+            let agent_root = expand_tilde(&agent.current_path);
+            if agent_root.exists() && agent_root.is_dir() {
+                for skill_root in find_skill_roots(&agent_root) {
+                    let name = skill_root
+                        .file_name()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    if name.is_empty() || name.starts_with('.') {
+                        continue;
+                    }
+
+                    let key = safe_skill_dir_name(&name);
+                    let dst = store_root.join(&key);
+                    if !dst.exists() {
+                        copy_dir_all(&skill_root, &dst)?;
+                    }
+
+                    found.entry(key).or_default().insert(agent.id.clone());
+                }
+            }
+
+            let done_progress = 15.0 + ((idx + 1) as f64 / total) * 70.0;
+            emit(SyncAllToManagerProgressLog {
+                id: id.clone(),
+                label: format!("正在从 {} 目录提取技能资产...", agent.name),
+                status: "success".to_string(),
+                progress: done_progress,
+            });
         }
 
-        for skill_root in find_skill_roots(&agent_root) {
-            let name = skill_root
-                .file_name()
-                .map(|s| s.to_string_lossy().to_string())
-                .unwrap_or_default();
+        emit(SyncAllToManagerProgressLog {
+            id: "merge".to_string(),
+            label: "正在进行资产去重与元数据合并...".to_string(),
+            status: "loading".to_string(),
+            progress: 90.0,
+        });
+
+        let mut skills: Vec<Skill> = vec![];
+        for entry in fs::read_dir(&store_root)
+            .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
+        {
+            let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+            let file_type = entry
+                .file_type()
+                .map_err(|e| format!("Failed to read file type: {e}"))?;
+            if !file_type.is_dir() {
+                continue;
+            }
+            let name = entry.file_name().to_string_lossy().to_string();
             if name.is_empty() || name.starts_with('.') {
                 continue;
             }
 
-            let key = safe_skill_dir_name(&name);
-            let dst = store_root.join(&key);
-            if !dst.exists() {
-                copy_dir_all(&skill_root, &dst)?;
-            }
+            let dir = entry.path();
+            let (_meta_name, description, tags) = parse_metadata_from_dir(&dir, &name);
+            let enabled_agents = found
+                .get(&name)
+                .map(|s| s.iter().cloned().collect())
+                .unwrap_or_else(Vec::new);
 
-            found.entry(key).or_default().insert(agent.id.clone());
-        }
-    }
-
-    let mut skills: Vec<Skill> = vec![];
-    for entry in fs::read_dir(&store_root)
-        .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
-    {
-        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
-        let file_type = entry
-            .file_type()
-            .map_err(|e| format!("Failed to read file type: {e}"))?;
-        if !file_type.is_dir() {
-            continue;
-        }
-        let name = entry.file_name().to_string_lossy().to_string();
-        if name.is_empty() || name.starts_with('.') {
-            continue;
+            skills.push(Skill {
+                id: name.clone(),
+                name: name.clone(),
+                description,
+                author: "本地导入".to_string(),
+                source: "local".to_string(),
+                source_url: None,
+                tags,
+                enabled_agents,
+                last_sync: Some(now_iso()),
+                is_adopted: true,
+            });
         }
 
-        let dir = entry.path();
-        let (_meta_name, description, tags) = parse_metadata_from_dir(&dir, &name);
-        let enabled_agents = found
-            .get(&name)
-            .map(|s| s.iter().cloned().collect())
-            .unwrap_or_else(Vec::new);
-
-        skills.push(Skill {
-            id: name.clone(),
-            name: name.clone(),
-            description,
-            author: "本地导入".to_string(),
-            source: "local".to_string(),
-            source_url: None,
-            tags,
-            enabled_agents,
-            last_sync: Some(now_iso()),
-            is_adopted: true,
+        emit(SyncAllToManagerProgressLog {
+            id: "merge".to_string(),
+            label: "正在进行资产去重与元数据合并...".to_string(),
+            status: "success".to_string(),
+            progress: 100.0,
         });
-    }
 
-    Ok(skills)
+        Ok(skills)
+    })();
+
+    match result {
+        Ok(skills) => Ok(skills),
+        Err(err) => {
+            emit(SyncAllToManagerProgressLog {
+                id: "error".to_string(),
+                label: format!("同步失败: {err}"),
+                status: "error".to_string(),
+                progress: 100.0,
+            });
+            Err(err)
+        }
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -571,6 +663,7 @@ pub fn run() {
             sync_skill_distribution,
             sync_all_skills_distribution,
             sync_all_to_manager_store,
+            sync_all_to_manager_store_with_progress,
             uninstall_skill,
             reset_store
         ])

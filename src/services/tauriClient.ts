@@ -1,5 +1,6 @@
 
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import type { AgentInfo, Skill } from '../types';
 import { useSettingsStore } from '../stores/useSettingsStore';
 
@@ -42,4 +43,30 @@ export const resetStore = async () => {
 
 export const syncAllToManagerStore = async (agents: AgentInfo[]): Promise<Skill[]> => {
   return await invoke<Skill[]>('sync_all_to_manager_store', { agents, storagePath: storagePath() });
+};
+
+export type SyncAllToManagerProgressLog = {
+  id: string;
+  label: string;
+  status: 'loading' | 'success' | 'error';
+  progress: number;
+};
+
+export const syncAllToManagerStoreWithProgress = async (
+  agents: AgentInfo[],
+  onProgress: (log: SyncAllToManagerProgressLog) => void,
+): Promise<Skill[]> => {
+  const unlisten = await listen<SyncAllToManagerProgressLog>(
+    'sync_all_to_manager_store:progress',
+    (event) => onProgress(event.payload),
+  );
+
+  try {
+    return await invoke<Skill[]>('sync_all_to_manager_store_with_progress', {
+      agents,
+      storagePath: storagePath(),
+    });
+  } finally {
+    unlisten();
+  }
 };

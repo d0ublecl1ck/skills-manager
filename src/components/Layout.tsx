@@ -3,6 +3,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import { ICONS } from '../constants';
 import FeedbackModal from './FeedbackModal';
+import SyncModal from './SyncModal';
 import { useUIStore } from '../stores/useUIStore';
 
 interface LayoutProps {
@@ -50,6 +51,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </main>
       <FeedbackModal />
+      <SyncModal />
     </div>
   );
 };

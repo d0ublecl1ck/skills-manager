@@ -6,13 +6,12 @@ import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
 import { Search } from 'lucide-react';
-import { syncAllToManagerStore } from '../services/tauriClient';
+import { useUIStore } from '../stores/useUIStore';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
-  const mergeSkills = useSkillStore(state => state.mergeSkills);
-  const addLog = useSkillStore(state => state.addLog);
   const agents = useAgentStore(state => state.agents);
+  const setSyncModalOpen = useUIStore((state) => state.setSyncModalOpen);
   
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
@@ -29,24 +28,7 @@ const Dashboard: React.FC = () => {
   }, [skills, search, selectedAgent]);
 
   const handleSyncAll = async () => {
-    try {
-      const synced = await syncAllToManagerStore(agents);
-      mergeSkills(synced);
-      addLog({
-        action: 'sync',
-        skillId: '全量同步',
-        status: 'success',
-        message: `同步完成：已识别 ${synced.length} 个技能目录`
-      });
-    } catch (e) {
-      console.error(e);
-      addLog({
-        action: 'sync',
-        skillId: '全量同步',
-        status: 'error',
-        message: `同步失败: ${e instanceof Error ? e.message : '未知错误'}`
-      });
-    }
+    setSyncModalOpen(true);
   };
 
   return (

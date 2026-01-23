@@ -19,6 +19,12 @@ interface SkillState {
 }
 
 const INITIAL_SKILLS: Skill[] = [];
+const REMOVED_DEMO_SKILL_NAMES = new Set([
+  'Git Workflow Helper',
+  'Rust Analyzer Pro',
+  'Tailwind CSS IntelliSense',
+]);
+const REMOVED_DEMO_SKILL_IDS = new Set(['1', '2', '3']);
 
 export const useSkillStore = create<SkillState>()(
   persist(
@@ -90,6 +96,22 @@ export const useSkillStore = create<SkillState>()(
         ]
       })),
     }),
-    { name: 'skills-manager-storage' }
+    {
+      name: 'skills-manager-storage',
+      version: 1,
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== 'object') {
+          return { skills: INITIAL_SKILLS, logs: [] };
+        }
+        const state = persisted as { skills?: Skill[]; logs?: OperationLog[] };
+        const skills = Array.isArray(state.skills)
+          ? state.skills.filter(
+              (s) => !REMOVED_DEMO_SKILL_IDS.has(s.id) && !REMOVED_DEMO_SKILL_NAMES.has(s.name),
+            )
+          : INITIAL_SKILLS;
+        const logs = Array.isArray(state.logs) ? state.logs : [];
+        return { ...state, skills, logs };
+      },
+    }
   )
 );

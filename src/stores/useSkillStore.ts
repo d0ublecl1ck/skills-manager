@@ -18,42 +18,7 @@ interface SkillState {
   addLog: (log: Omit<OperationLog, 'id' | 'timestamp'>) => void;
 }
 
-const INITIAL_SKILLS: Skill[] = [
-  {
-    id: '1',
-    name: 'Git Workflow Helper',
-    description: '自动生成提交信息、分支建议并帮助管理 Pull Requests。',
-    author: 'SkillsManager Team',
-    source: 'github',
-    sourceUrl: 'https://github.com/skills-manager/git-helper',
-    tags: ['git', 'productivity', 'automation'],
-    enabledAgents: [AgentId.OPENCODE, AgentId.CLAUDE_CODE, AgentId.CODEX, AgentId.CURSOR, AgentId.AMP, AgentId.ANTIGRAVITY, AgentId.CLINE, AgentId.COPILOT],
-    isAdopted: true,
-    lastSync: '2025-01-22T10:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Rust Analyzer Pro',
-    description: '深度分析 Rust 代码质量并提供优化建议。',
-    author: 'rust-lang-enthusiast',
-    source: 'local',
-    tags: ['rust', 'analysis'],
-    enabledAgents: [AgentId.CURSOR, AgentId.CODEX, AgentId.CLINE, AgentId.COPILOT],
-    isAdopted: true,
-    lastSync: '2025-01-21T15:30:00Z'
-  },
-  {
-    id: '3',
-    name: 'Tailwind CSS IntelliSense',
-    description: '为 AI Agent 提供更准确的样式补全和设计系统建议。',
-    author: 'style-ninja',
-    source: 'github',
-    tags: ['ui', 'tailwind', 'css'],
-    enabledAgents: [AgentId.CURSOR, AgentId.OPENCODE, AgentId.CLINE, AgentId.COPILOT],
-    isAdopted: true,
-    lastSync: '2025-01-22T08:00:00Z'
-  }
-];
+const INITIAL_SKILLS: Skill[] = [];
 
 export const useSkillStore = create<SkillState>()(
   persist(

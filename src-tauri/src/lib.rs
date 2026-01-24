@@ -129,6 +129,85 @@ fn dir_contains_skill_md(dir: &Path) -> bool {
     false
 }
 
+fn find_skill_md_path(dir: &Path) -> Option<PathBuf> {
+    let entries = fs::read_dir(dir).ok()?;
+    for entry in entries.flatten() {
+        let file_type = entry.file_type().ok()?;
+        if !file_type.is_file() {
+            continue;
+        }
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.eq_ignore_ascii_case("skill.md") {
+            return Some(entry.path());
+        }
+    }
+    None
+}
+
+fn skill_md_starts_with_yaml_frontmatter(content: &str) -> bool {
+    let trimmed = content.trim_start_matches('\u{feff}');
+    trimmed.starts_with("---\n") || trimmed.starts_with("---\r\n")
+}
+
+fn yaml_single_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct SkillMdQuality {
+    has_yaml_frontmatter: bool,
+    bytes: u64,
+}
+
+fn skill_md_quality(dir: &Path) -> SkillMdQuality {
+    let Some(path) = find_skill_md_path(dir) else {
+        return SkillMdQuality {
+            has_yaml_frontmatter: false,
+            bytes: 0,
+        };
+    };
+
+    let bytes = fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+    let content = fs::read_to_string(&path).unwrap_or_default();
+    let has_yaml_frontmatter = skill_md_starts_with_yaml_frontmatter(&content);
+
+    SkillMdQuality {
+        has_yaml_frontmatter,
+        bytes,
+    }
+}
+
+fn should_replace_skill_dir(candidate_src: &Path, existing_dst: &Path) -> bool {
+    let src_q = skill_md_quality(candidate_src);
+    let dst_q = skill_md_quality(existing_dst);
+
+    match (src_q.has_yaml_frontmatter, dst_q.has_yaml_frontmatter) {
+        (true, false) => return true,
+        (false, true) => return false,
+        _ => {}
+    }
+
+    src_q.bytes > dst_q.bytes
+}
+
+fn ensure_skill_md_has_yaml_frontmatter(path: &Path, skill_name: &str) -> Result<(), String> {
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
+    if skill_md_starts_with_yaml_frontmatter(&content) {
+        return Ok(());
+    }
+
+    let name = skill_name.trim();
+    let yaml_name = if name.is_empty() {
+        yaml_single_quote("skill")
+    } else {
+        yaml_single_quote(name)
+    };
+
+    let new_content = format!("---\nname: {yaml_name}\n---\n\n{content}");
+    fs::write(path, new_content).map_err(|e| format!("Failed to write {}: {e}", path.display()))
+}
+
 fn find_skill_roots(root: &Path) -> Vec<PathBuf> {
     let mut roots: Vec<PathBuf> = vec![];
     let mut stack: Vec<PathBuf> = vec![root.to_path_buf()];
@@ -405,6 +484,11 @@ fn sync_one_skill(store_root: &Path, skill_name: &str, enabled: &[String], agent
         if enabled.iter().any(|a| a == &agent.id) {
             ensure_dir(&expand_tilde(&agent.current_path))?;
             copy_dir_all(&src, &dst)?;
+            if agent.id == "codex" {
+                if let Some(skill_md) = find_skill_md_path(&dst) {
+                    ensure_skill_md_has_yaml_frontmatter(&skill_md, skill_name)?;
+                }
+            }
             continue;
         } else {
             let _ = remove_dir_if_exists(&dst);
@@ -524,7 +608,7 @@ fn sync_all_to_manager_store_inner(
 
                     let key = safe_skill_dir_name(&name);
                     let dst = store_root.join(&key);
-                    if !dst.exists() {
+                    if !dst.exists() || should_replace_skill_dir(&skill_root, &dst) {
                         copy_dir_all(&skill_root, &dst)?;
                     }
 
@@ -648,6 +732,83 @@ mod tests {
             enabled,
             icon: "test".to_string(),
         }
+    }
+
+    #[test]
+    fn sync_all_prefers_skill_with_yaml_frontmatter() {
+        let tmp = temp_test_dir("sync-all-prefers-frontmatter");
+        let store_root = tmp.join("store");
+        let agent_a_root = tmp.join("agent-a");
+        let agent_b_root = tmp.join("agent-b");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&agent_a_root).unwrap();
+        ensure_dir(&agent_b_root).unwrap();
+
+        let skill_dir = "agent-browser";
+        write_file(
+            &agent_a_root.join(skill_dir).join("SKILL.md"),
+            "# agent-browser\n\n---\n",
+        );
+        write_file(
+            &agent_b_root.join(skill_dir).join("SKILL.md"),
+            "---\nname: agent-browser\n---\n\n# agent-browser\n",
+        );
+
+        let agents = vec![
+            agent("a", "A", &agent_a_root, true),
+            agent("b", "B", &agent_b_root, true),
+        ];
+
+        let _skills = sync_all_to_manager_store_inner(
+            None,
+            agents,
+            store_root.to_string_lossy().to_string(),
+        )
+        .unwrap();
+
+        let content = fs::read_to_string(store_root.join(skill_dir).join("SKILL.md")).unwrap();
+        assert!(
+            content.starts_with("---\n") || content.starts_with("---\r\n"),
+            "store should keep the version with YAML frontmatter"
+        );
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn sync_one_skill_adds_yaml_frontmatter_for_codex() {
+        let tmp = temp_test_dir("sync-one-skill-frontmatter");
+        let store_root = tmp.join("store");
+        let codex_root = tmp.join("codex");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&codex_root).unwrap();
+
+        let skill_name = "agent-browser";
+        let store_skill_dir = store_root.join(safe_skill_dir_name(skill_name));
+        write_file(
+            &store_skill_dir.join("SKILL.md"),
+            "# agent-browser\n\n---\n",
+        );
+
+        let agents = vec![agent("codex", "Codex", &codex_root, true)];
+        sync_one_skill(&store_root, skill_name, &["codex".to_string()], &agents).unwrap();
+
+        let dst_skill_md = codex_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md");
+        let content = fs::read_to_string(dst_skill_md).unwrap();
+        assert!(
+            content.starts_with("---\n") || content.starts_with("---\r\n"),
+            "Codex target should have YAML frontmatter"
+        );
+        assert!(
+            content.contains("name: 'agent-browser'")
+                || content.contains("name: \"agent-browser\"")
+                || content.contains("name: agent-browser"),
+            "YAML frontmatter should contain name"
+        );
+
+        let _ = fs::remove_dir_all(&tmp);
     }
 
     #[test]

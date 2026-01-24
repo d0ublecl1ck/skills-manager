@@ -33,14 +33,10 @@ describe("App", () => {
     const installedSkill: Skill = {
       id: "test-skill",
       name: "Test Skill",
-      description: "A test skill installed via tauri.",
-      author: "GitHub",
-      source: "github",
       sourceUrl: "github.com/foo/bar",
-      tags: ["local", "skills-manager"],
       enabledAgents: [],
-      isAdopted: true,
       lastSync: "2026-01-23T00:00:00Z",
+      lastUpdate: "2026-01-23T00:00:00Z",
     };
 
     vi.mocked(invoke).mockImplementation((cmd) => {

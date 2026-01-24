@@ -11,18 +11,14 @@ use tauri::Emitter;
 struct Skill {
     id: String,
     name: String,
-    description: String,
-    author: String,
-    source: String,
     #[serde(default)]
     source_url: Option<String>,
-    #[serde(default)]
-    tags: Vec<String>,
     #[serde(default)]
     enabled_agents: Vec<String>,
     #[serde(default)]
     last_sync: Option<String>,
-    is_adopted: bool,
+    #[serde(default)]
+    last_update: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -222,10 +218,8 @@ fn normalize_install_url(input: &str) -> String {
     trimmed.to_string()
 }
 
-fn parse_metadata_from_dir(dir: &Path, fallback_name: &str) -> (String, String, Vec<String>) {
+fn parse_name_from_dir(dir: &Path, fallback_name: &str) -> String {
     let mut name = fallback_name.to_string();
-    let mut description = "No description available.".to_string();
-    let mut tags: Vec<String> = vec![];
 
     let candidates = ["SKILL.md", "skill.md", "README.md", "README.MD", "readme.md"];
     let mut content: Option<String> = None;
@@ -247,34 +241,9 @@ fn parse_metadata_from_dir(dir: &Path, fallback_name: &str) -> (String, String, 
                 break;
             }
         }
-        for line in text.lines() {
-            let t = line.trim();
-            if t.is_empty() || t.starts_with('#') {
-                continue;
-            }
-            description = t.to_string();
-            break;
-        }
-        for line in text.lines() {
-            let t = line.trim();
-            if t.to_lowercase().starts_with("tags:") {
-                let rest = t.splitn(2, ':').nth(1).unwrap_or("").trim();
-                tags = rest
-                    .split(',')
-                    .map(|s| s.trim())
-                    .filter(|s| !s.is_empty())
-                    .map(|s| s.to_string())
-                    .collect();
-                break;
-            }
-        }
     }
 
-    if tags.is_empty() {
-        tags = vec!["local".to_string(), "skills-manager".to_string()];
-    }
-
-    (name, description, tags)
+    name
 }
 
 fn generate_id() -> String {
@@ -366,7 +335,7 @@ fn bootstrap_skills_store(skills: Vec<Skill>, storage_path: String) -> Result<()
             continue;
         }
         ensure_dir(&skill_dir)?;
-        let skill_md = format!("# {}\n\n{}\n", skill.name, skill.description);
+        let skill_md = format!("# {}\n", skill.name);
         let _ = fs::write(skill_dir.join("SKILL.md"), skill_md);
     }
 
@@ -394,7 +363,7 @@ fn install_skill(repo_url: String, storage_path: String) -> Result<Skill, String
         .unwrap_or("skill")
         .trim_end_matches(".git")
         .trim_end_matches(".zip");
-    let (meta_name, description, tags) = parse_metadata_from_dir(&temp_dest, fallback_name);
+    let meta_name = parse_name_from_dir(&temp_dest, fallback_name);
     let dir_name = unique_skill_dir_name(&store_dir, &meta_name);
     let final_dest = store_dir.join(&dir_name);
 
@@ -403,32 +372,15 @@ fn install_skill(repo_url: String, storage_path: String) -> Result<Skill, String
         let _ = fs::remove_dir_all(&temp_dest);
     }
 
-    let author = if url.contains("github.com/") {
-        url.split('/')
-            .nth(3)
-            .unwrap_or("GitHub")
-            .to_string()
-    } else {
-        "网络资源".to_string()
-    };
-
-    let source = if url.contains("github.com/") {
-        "github".to_string()
-    } else {
-        "registry".to_string()
-    };
+    let now = now_iso();
 
     Ok(Skill {
         id: skill_id,
         name: dir_name,
-        description,
-        author,
-        source,
         source_url: Some(repo_url),
-        tags,
         enabled_agents: vec![],
-        last_sync: Some(now_iso()),
-        is_adopted: true,
+        last_sync: Some(now.clone()),
+        last_update: Some(now),
     })
 }
 
@@ -446,10 +398,14 @@ fn sync_one_skill(store_root: &Path, skill_name: &str, enabled: &[String], agent
     }
 
     for agent in agents {
+        if !agent.enabled {
+            continue;
+        }
         let dst = skill_dest_for_agent(agent, skill_name);
-        if agent.enabled && enabled.iter().any(|a| a == &agent.id) {
+        if enabled.iter().any(|a| a == &agent.id) {
             ensure_dir(&expand_tilde(&agent.current_path))?;
             copy_dir_all(&src, &dst)?;
+            continue;
         } else {
             let _ = remove_dir_if_exists(&dst);
         }
@@ -592,6 +548,7 @@ fn sync_all_to_manager_store_inner(
             progress: 90.0,
         });
 
+        let now = now_iso();
         let mut skills: Vec<Skill> = vec![];
         for entry in fs::read_dir(&store_root)
             .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
@@ -608,8 +565,6 @@ fn sync_all_to_manager_store_inner(
                 continue;
             }
 
-            let dir = entry.path();
-            let (_meta_name, description, tags) = parse_metadata_from_dir(&dir, &name);
             let enabled_agents = found
                 .get(&name)
                 .map(|s| s.iter().cloned().collect())
@@ -618,14 +573,10 @@ fn sync_all_to_manager_store_inner(
             skills.push(Skill {
                 id: name.clone(),
                 name: name.clone(),
-                description,
-                author: "本地导入".to_string(),
-                source: "local".to_string(),
                 source_url: None,
-                tags,
                 enabled_agents,
-                last_sync: Some(now_iso()),
-                is_adopted: true,
+                last_sync: Some(now.clone()),
+                last_update: Some(now.clone()),
             });
         }
 
@@ -669,4 +620,79 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn temp_test_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("skills-manager-{name}-{}", generate_id()));
+        ensure_dir(&dir).expect("create temp dir");
+        dir
+    }
+
+    fn write_file(path: &Path, content: &str) {
+        if let Some(parent) = path.parent() {
+            ensure_dir(parent).expect("create parent dir");
+        }
+        fs::write(path, content).expect("write file");
+    }
+
+    fn agent(id: &str, name: &str, root: &Path, enabled: bool) -> AgentInfo {
+        AgentInfo {
+            id: id.to_string(),
+            name: name.to_string(),
+            default_path: root.to_string_lossy().to_string(),
+            current_path: root.to_string_lossy().to_string(),
+            enabled,
+            icon: "test".to_string(),
+        }
+    }
+
+    #[test]
+    fn sync_one_skill_skips_disabled_agents() {
+        let tmp = temp_test_dir("sync-one-skill");
+        let store_root = tmp.join("store");
+        let enabled_root = tmp.join("enabled-agent");
+        let disabled_root = tmp.join("disabled-agent");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&enabled_root).unwrap();
+        ensure_dir(&disabled_root).unwrap();
+
+        let skill_name = "My Skill";
+        let store_skill_dir = store_root.join(safe_skill_dir_name(skill_name));
+        write_file(&store_skill_dir.join("SKILL.md"), "# My Skill\n");
+
+        // Create pre-existing folders in both agents to ensure removal/copy behavior is observable.
+        write_file(
+            &enabled_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md"),
+            "# old\n",
+        );
+        write_file(
+            &disabled_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md"),
+            "# keep\n",
+        );
+
+        let agents = vec![
+            agent("enabled", "Enabled", &enabled_root, true),
+            agent("disabled", "Disabled", &disabled_root, false),
+        ];
+
+        // Skill is not enabled for the enabled agent -> should be removed there.
+        // Disabled agent should remain untouched.
+        sync_one_skill(&store_root, skill_name, &[], &agents).unwrap();
+
+        assert!(
+            !enabled_root.join(safe_skill_dir_name(skill_name)).exists(),
+            "enabled agent folder should be removed when not selected"
+        );
+        assert!(
+            disabled_root.join(safe_skill_dir_name(skill_name)).exists(),
+            "disabled agent folder should not be touched"
+        );
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
 }

@@ -42,6 +42,7 @@ export const useSkillStore = create<SkillState>()(
             ...existing,
             enabledAgents: Array.from(new Set([...existing.enabledAgents, ...next.enabledAgents])),
             lastSync: next.lastSync ?? existing.lastSync,
+            lastUpdate: next.lastUpdate ?? existing.lastUpdate,
           };
         });
         for (const next of incomingByName.values()) merged.push(next);
@@ -109,8 +110,16 @@ export const useSkillStore = create<SkillState>()(
               (s) => !REMOVED_DEMO_SKILL_IDS.has(s.id) && !REMOVED_DEMO_SKILL_NAMES.has(s.name),
             )
           : INITIAL_SKILLS;
+        const normalizedSkills = skills.map((skill) => ({
+          id: skill.id,
+          name: skill.name,
+          sourceUrl: skill.sourceUrl,
+          enabledAgents: Array.isArray(skill.enabledAgents) ? skill.enabledAgents : [],
+          lastSync: skill.lastSync,
+          lastUpdate: skill.lastUpdate,
+        }));
         const logs = Array.isArray(state.logs) ? state.logs : [];
-        return { ...state, skills, logs };
+        return { ...state, skills: normalizedSkills, logs };
       },
     }
   )

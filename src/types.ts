@@ -21,14 +21,10 @@ export interface AgentInfo {
 export interface Skill {
   id: string;
   name: string;
-  description: string;
-  author: string;
-  source: 'github' | 'local' | 'registry';
   sourceUrl?: string;
-  tags: string[];
   enabledAgents: AgentId[];
   lastSync?: string;
-  isAdopted: boolean; // 是否已纳入管理
+  lastUpdate?: string;
 }
 
 export interface OperationLog {
@@ -40,4 +36,3 @@ export interface OperationLog {
   status: 'success' | 'error';
   message: string;
 }
-

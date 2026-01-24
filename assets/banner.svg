@@ -1,0 +1,40 @@
+<svg width="1200" height="475" viewBox="0 0 1200 475" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Skills Manager banner placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="475" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#000000"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0" y1="0" x2="1200" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22c55e"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="shadow" x="-40" y="-40" width="1280" height="555" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="475" fill="url(#bg)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="72" y="74" width="1056" height="327" rx="24" fill="#0b0f17" stroke="url(#stroke)" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.9">
+    <text x="112" y="170" fill="#ffffff" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji" font-size="44" font-weight="800">
+      Skills Manager
+    </text>
+    <text x="112" y="220" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="18" font-weight="600">
+      Replace this banner with your screenshots (recommended: 1200×475)
+    </text>
+  </g>
+
+  <g opacity="0.85">
+    <rect x="112" y="260" width="360" height="18" rx="9" fill="#111827" stroke="#334155"/>
+    <rect x="112" y="292" width="520" height="18" rx="9" fill="#111827" stroke="#334155"/>
+    <rect x="112" y="324" width="440" height="18" rx="9" fill="#111827" stroke="#334155"/>
+    <text x="112" y="386" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" font-size="14">
+      ./assets/banner.svg
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,34 @@
+<svg width="900" height="520" viewBox="0 0 900 520" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Skills Manager demo placeholder">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="900" y2="520" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0b0f17"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="900" height="520" rx="18" fill="url(#bg2)"/>
+  <rect x="24" y="24" width="852" height="472" rx="14" fill="#0b1220" stroke="#334155"/>
+
+  <g opacity="0.95">
+    <text x="56" y="92" fill="#ffffff" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="26" font-weight="800">
+      Demo Placeholder
+    </text>
+    <text x="56" y="128" fill="#cbd5e1" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="16" font-weight="600">
+      Replace with a GIF / screenshot showing scan → toggle distribution → install
+    </text>
+  </g>
+
+  <g opacity="0.9">
+    <rect x="56" y="168" width="788" height="44" rx="10" fill="#0f172a" stroke="#334155"/>
+    <rect x="56" y="232" width="520" height="44" rx="10" fill="#0f172a" stroke="#334155"/>
+    <rect x="592" y="232" width="252" height="44" rx="10" fill="#0f172a" stroke="#334155"/>
+    <rect x="56" y="296" width="788" height="160" rx="12" fill="#0f172a" stroke="#334155"/>
+
+    <text x="76" y="196" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" font-size="13">
+      Tip: record a short looped GIF (~6–10s), keep it under ~6–10MB for fast README loading
+    </text>
+    <text x="56" y="488" fill="#64748b" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace" font-size="13">
+      ./assets/demo.svg (replace me)
+    </text>
+  </g>
+</svg>

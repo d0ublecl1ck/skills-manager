@@ -21,8 +21,10 @@ const Dashboard: React.FC = () => {
 
   const filteredSkills = useMemo(() => {
     return skills.filter(skill => {
-      const matchesSearch = skill.name.toLowerCase().includes(search.toLowerCase()) || 
-                            skill.description.toLowerCase().includes(search.toLowerCase());
+      const query = search.toLowerCase();
+      const matchesSearch =
+        skill.name.toLowerCase().includes(query) ||
+        skill.id.toLowerCase().includes(query);
       const matchesAgent = selectedAgent === 'all' || skill.enabledAgents.includes(selectedAgent as AgentId);
       return matchesSearch && matchesAgent;
     });

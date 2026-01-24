@@ -6,6 +6,17 @@ import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { PLATFORM_ICONS } from '../constants';
 import { Trash2, CheckSquare } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog';
 
 interface SkillCardProps {
   skill: Skill;
@@ -40,20 +51,39 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
         <h3 className="text-[16px] font-bold text-black tracking-tight leading-tight flex-1 pr-4">
           {skill.name}
         </h3>
-        <button 
-          onClick={() => confirm('确定卸载此技能吗？') && removeSkill(skill.id)}
-          className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
-          title="卸载技能"
-          aria-label="卸载技能"
-        >
-          <Trash2 size={16} />
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
+              title="卸载技能"
+              aria-label="卸载技能"
+            >
+              <Trash2 size={16} />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent className="vercel-border bg-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-black">确认卸载？</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-500">
+                将从中心库移除 <span className="mono text-black">{skill.name}</span>，并清理所有已启用平台下的同名目录。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={() => removeSkill(skill.id)}
+              >
+                卸载
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
-      {/* 描述信息 */}
-      <p className="text-[13px] text-slate-500 leading-relaxed mb-6 flex-1 line-clamp-3">
-        {skill.description}
-      </p>
+      <div className="text-[12px] text-slate-400 mono mb-6">
+        {skill.id}
+      </div>
 
       {/* 分割线 */}
       <div className="h-px bg-[#f3f3f3] w-full mb-5"></div>
@@ -123,25 +153,18 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
         </div>
       </div>
 
-      {/* 底部作者/来源标记 */}
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-slate-100 flex items-center justify-center">
-            <span className="text-[9px] font-bold text-slate-400 uppercase">{skill.author.charAt(0)}</span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-medium">{skill.author}</span>
-        </div>
-        {skill.sourceUrl && (
-          <a 
-            href={skill.sourceUrl} 
-            target="_blank" 
+      {skill.sourceUrl && (
+        <div className="mt-6 flex items-center justify-end">
+          <a
+            href={skill.sourceUrl}
+            target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] text-slate-300 hover:text-black transition-colors underline decoration-slate-200"
           >
             源码
           </a>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

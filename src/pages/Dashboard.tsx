@@ -5,13 +5,14 @@ import { useAgentStore } from '../stores/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
-import { Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
   const agents = useAgentStore(state => state.agents);
   const setSyncModalOpen = useUIStore((state) => state.setSyncModalOpen);
+  const setDevModalOpen = useUIStore((state) => state.setDevModalOpen);
   
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
@@ -31,6 +32,10 @@ const Dashboard: React.FC = () => {
     setSyncModalOpen(true);
   };
 
+  const handleUpdateAll = () => {
+    setDevModalOpen(true);
+  };
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -41,9 +46,19 @@ const Dashboard: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={handleSyncAll}
-            className="bg-white border border-[#eaeaea] hover:border-black text-black px-5 py-2 rounded-lg text-[13px] font-semibold transition-all"
+            className="bg-white border border-[#eaeaea] hover:border-black text-black px-4 py-2 rounded-lg text-[13px] font-semibold transition-all flex items-center gap-2"
+            title="将各 Agent 目录资产提取至中心库"
           >
+            <RefreshCw size={14} className="opacity-40" />
             同步全部
+          </button>
+          <button
+            onClick={handleUpdateAll}
+            className="bg-white border border-[#eaeaea] hover:border-black text-black px-4 py-2 rounded-lg text-[13px] font-semibold transition-all flex items-center gap-2"
+            title="在线检查所有技能的最新版本"
+          >
+            <RefreshCw size={14} className="opacity-40" />
+            更新全库
           </button>
           <button className="bg-black border border-black hover:bg-white hover:text-black text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]">
             添加技能

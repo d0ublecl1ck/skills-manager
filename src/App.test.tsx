@@ -149,4 +149,29 @@ describe("App", () => {
     expect(screen.queryByText("资产汇总同步")).not.toBeInTheDocument();
     expect(unlisten).toHaveBeenCalled();
   });
+
+  it("opens dev modal when clicking update all", async () => {
+    window.location.hash = "#/";
+    window.localStorage.setItem(
+      "settings-manager-storage-v1",
+      JSON.stringify({
+        state: { storagePath: "~/.skillsm", hasCompletedOnboarding: true },
+        version: 0,
+      }),
+    );
+
+    vi.mocked(invoke).mockImplementation((cmd) => {
+      if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      return Promise.resolve(undefined as never);
+    });
+
+    render(<App />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "更新全库" }));
+    expect(await screen.findByText("正在开发中")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "我知道了" }));
+    expect(screen.queryByText("正在开发中")).not.toBeInTheDocument();
+  });
 });

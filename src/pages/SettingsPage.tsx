@@ -1,11 +1,28 @@
 
 import React, { useState } from 'react';
-import { Info, Folder, RotateCcw, Download, Trash2, CheckCircle2 } from 'lucide-react';
+import { Info, Folder, RotateCcw, Download, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { resetStore } from '../services/tauriClient';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '../components/ui/alert-dialog';
 
 const SettingsPage: React.FC = () => {
-  const { storagePath, setStoragePath, resetSettings } = useSettingsStore();
+  const {
+    storagePath,
+    setStoragePath,
+    resetSettings,
+    recycleBinRetentionDays,
+    setRecycleBinRetentionDays,
+  } = useSettingsStore();
   const [isSaved, setIsSaved] = useState(false);
 
   const handlePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -14,16 +31,21 @@ const SettingsPage: React.FC = () => {
     setTimeout(() => setIsSaved(false), 2000);
   };
 
+  const handleRetentionChange = (value: number) => {
+    const days = Math.min(90, Math.max(1, Number.isFinite(value) ? value : 15));
+    setRecycleBinRetentionDays(days);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
   const handleResetData = async () => {
-    if (confirm('确定要重置所有数据吗？这将永久删除所有已安装的技能和配置。')) {
-      try {
-        await resetStore();
-      } catch (e) {
-        console.error(e);
-      }
-      localStorage.clear();
-      window.location.reload();
+    try {
+      await resetStore();
+    } catch (e) {
+      console.error(e);
     }
+    localStorage.clear();
+    window.location.reload();
   };
 
   return (
@@ -45,7 +67,7 @@ const SettingsPage: React.FC = () => {
           )}
         </div>
         
-        <div className="vercel-border bg-white rounded-xl overflow-hidden shadow-sm">
+        <div className="vercel-border bg-white rounded-xl overflow-hidden shadow-sm divide-y divide-[#eaeaea]">
           <div className="p-6 space-y-5">
             <div className="flex flex-col space-y-1.5">
               <label className="text-[13px] font-bold text-black flex items-center gap-2">
@@ -85,6 +107,41 @@ const SettingsPage: React.FC = () => {
               </button>
             </div>
           </div>
+
+          <div className="p-6 space-y-5">
+            <div className="flex flex-col space-y-1.5">
+              <label className="text-[13px] font-bold text-black flex items-center gap-2">
+                <Clock size={14} className="text-slate-400" />
+                垃圾箱自动清空天数
+              </label>
+              <p className="text-[12px] text-slate-400 leading-relaxed">
+                技能移入垃圾箱后保留的天数。超过期限将自动清理（可在垃圾箱页面查看）。
+              </p>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <div className="flex-1">
+                <input
+                  type="range"
+                  min="1"
+                  max="90"
+                  value={recycleBinRetentionDays}
+                  onChange={(e) => handleRetentionChange(parseInt(e.target.value, 10))}
+                  className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-black"
+                  aria-label="垃圾箱自动清空天数"
+                />
+                <div className="flex justify-between mt-2 text-[11px] font-bold text-slate-300 mono">
+                  <span>1 天</span>
+                  <span>45 天</span>
+                  <span>90 天</span>
+                </div>
+              </div>
+              <div className="w-20 px-3 py-2 bg-[#fafafa] vercel-border rounded-lg text-center">
+                <span className="text-[14px] font-bold text-black mono">{recycleBinRetentionDays}</span>
+                <span className="text-[10px] ml-1 text-slate-400 font-bold">D</span>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -113,12 +170,30 @@ const SettingsPage: React.FC = () => {
               </h4>
               <p className="text-[12px] text-slate-400">永久删除所有已安装技能、日志和 Agent 配置。此操作不可撤销。</p>
             </div>
-            <button 
-              onClick={handleResetData}
-              className="bg-white text-red-600 border border-red-100 hover:border-red-600 px-5 py-2 rounded-lg text-[13px] font-bold hover:bg-red-50 transition-all"
-            >
-              彻底重置
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="bg-white text-red-600 border border-red-100 hover:border-red-600 px-5 py-2 rounded-lg text-[13px] font-bold hover:bg-red-50 transition-all">
+                  彻底重置
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="vercel-border bg-white">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-black">确认重置所有数据？</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-500">
+                    将永久删除所有已安装技能、日志和 Agent 配置，此操作不可撤销。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 text-white hover:bg-red-700"
+                    onClick={() => void handleResetData()}
+                  >
+                    彻底重置
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </section>

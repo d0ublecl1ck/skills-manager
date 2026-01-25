@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useAgentStore } from '../stores/useAgentStore';
-import { syncAllToManagerStore } from '../services/tauriClient';
+import { syncAllToManagerStore } from '../services/syncService';
 import { Zap, Search, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 const OnboardingModal: React.FC = () => {

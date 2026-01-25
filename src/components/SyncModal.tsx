@@ -6,7 +6,7 @@ import { useUIStore } from '../stores/useUIStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
-import { syncAllToManagerStoreWithProgress } from '../services/tauriClient';
+import { syncAllToManagerStoreWithProgress } from '../services/syncService';
 
 interface SyncLog {
   id: string;

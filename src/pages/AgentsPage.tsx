@@ -3,7 +3,7 @@ import React from 'react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { ICONS, PLATFORM_ICONS } from '../constants';
 import { useSkillStore } from '../stores/useSkillStore';
-import { syncAllSkillsDistribution } from '../services/tauriClient';
+import { syncAllSkillsDistribution } from '../services/syncService';
 import { AgentId } from '../types';
 
 const AgentsPage: React.FC = () => {

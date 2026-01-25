@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 
-import { syncSkillDistribution, uninstallSkill } from '../services/tauriClient';
+import { uninstallSkill } from '../services/skillService';
+import { syncSkillDistribution } from '../services/syncService';
 import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from './useAgentStore';
 import { useSettingsStore } from './useSettingsStore';
 import { useSkillStore } from './useSkillStore';
 
-vi.mock('../services/tauriClient', () => ({
+vi.mock('../services/syncService', () => ({
   syncSkillDistribution: vi.fn(() => Promise.resolve()),
+}));
+
+vi.mock('../services/skillService', () => ({
   uninstallSkill: vi.fn(() => Promise.resolve()),
 }));
 
@@ -140,4 +144,3 @@ describe('useSkillStore (recycle bin)', () => {
     expect(vi.mocked(uninstallSkill)).toHaveBeenCalledWith(expired, TEST_AGENTS);
   });
 });
-

@@ -7,7 +7,7 @@ import AgentsPage from './pages/AgentsPage';
 import SettingsPage from './pages/SettingsPage';
 import RecycleBinPage from './pages/RecycleBinPage';
 import OnboardingModal from './components/OnboardingModal';
-import { bootstrapSkillsStore } from './services/tauriClient';
+import { bootstrapSkillsStore } from './services/skillService';
 import { useSkillStore } from './stores/useSkillStore';
 
 const App: React.FC = () => {

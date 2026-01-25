@@ -44,7 +44,7 @@ describe('SkillCard', () => {
     render(<SkillCard skill={skill} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByTitle('覆盖重装'));
+    await user.click(screen.getByTitle('检查并执行更新'));
 
     expect(reInstallSkill).toHaveBeenCalledTimes(1);
     expect(reInstallSkill).toHaveBeenCalledWith('test-skill');
@@ -65,10 +65,9 @@ describe('SkillCard', () => {
     render(<SkillCard skill={skill} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByTitle('升级为平台受控技能'));
+    await user.click(screen.getByTitle('绑定来源后开启自动更新'));
 
-    expect(screen.getByText('收编引导程序')).toBeTruthy();
+    expect(screen.getByText('绑定来源引导')).toBeTruthy();
     expect(reInstallSkill).not.toHaveBeenCalled();
   });
 });
-

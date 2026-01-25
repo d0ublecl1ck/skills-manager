@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { ExternalLink, RefreshCcw, ShieldPlus, Trash2 } from 'lucide-react';
+import { ExternalLink, Link2, RefreshCcw, Trash2 } from 'lucide-react';
 
 import type { AgentId, Skill } from '../types';
 import { PLATFORM_ICONS } from '../constants';
@@ -43,7 +43,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
     if (!isAdopted) {
-      addToast('该技能尚未收编，请先点击下方的“收编技能”进行关联', 'info');
+      addToast('请先点击下方“绑定来源”以启用管理功能', 'info');
       setShowAdoptModal(true);
       return;
     }
@@ -67,7 +67,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     setIsUpdating(true);
     try {
       await reInstallSkill(skill.id);
-      addToast(`"${skill.name}" 已成功从源重新安装并覆盖`, 'success');
+      addToast(`"${skill.name}" 资产已同步至最新`, 'success');
     } catch (err) {
       addToast(err instanceof Error ? err.message : '更新失败，请检查网络连接', 'error');
     } finally {
@@ -99,7 +99,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
             onClick={handleUpdate}
             disabled={isUpdating}
             className={`p-1.5 text-slate-400 hover:text-black hover:bg-slate-50 rounded-md transition-all ${isUpdating ? 'animate-spin opacity-50' : 'active:scale-90'}`}
-            title={isAdopted ? '覆盖重装' : '升级为平台受控技能'}
+            title={isAdopted ? '检查并执行更新' : '绑定来源后开启自动更新'}
           >
             <RefreshCcw size={14} />
           </button>
@@ -167,9 +167,9 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
         <div className="flex items-center gap-2">
           {isAdopted ? (
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
               <span className="text-[10px] font-bold text-slate-400 mono uppercase tracking-tight">
-                Platform Managed
+                Active Manager
               </span>
             </div>
           ) : (
@@ -177,14 +177,19 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
               onClick={() => setShowAdoptModal(true)}
               className="flex items-center gap-2 px-3 py-1 bg-black text-white rounded-full text-[11px] font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
             >
-              <ShieldPlus size={12} />
-              收编技能
+              <Link2 size={12} />
+              绑定来源
             </button>
           )}
         </div>
         <div className="flex gap-2.5">
           {skill.sourceUrl && (
-            <a href={skill.sourceUrl} target="_blank" className="text-[#999] hover:text-black transition-colors p-1">
+            <a
+              href={skill.sourceUrl}
+              target="_blank"
+              className="text-[#999] hover:text-black transition-colors p-1"
+              title="查看原始仓库"
+            >
               <ExternalLink size={14} />
             </a>
           )}

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 
-import { uninstallSkill } from '../services/skillService';
+import { reinstallSkill, uninstallSkill } from '../services/skillService';
 import { syncSkillDistribution } from '../services/syncService';
 import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from './useAgentStore';
@@ -13,6 +13,18 @@ vi.mock('../services/syncService', () => ({
 
 vi.mock('../services/skillService', () => ({
   uninstallSkill: vi.fn(() => Promise.resolve()),
+  reinstallSkill: vi.fn(() =>
+    Promise.resolve({
+      id: 's1',
+      name: 'Skill One',
+      enabledAgents: [AgentId.CODEX],
+      sourceUrl: 'github.com/foo/bar',
+      lastSync: '2026-01-24T12:00:00Z',
+      lastUpdate: '2026-01-24T12:00:00Z',
+      installSource: 'platform',
+      isAdopted: true,
+    }),
+  ),
 }));
 
 const TEST_AGENTS: AgentInfo[] = [
@@ -36,6 +48,7 @@ describe('useSkillStore (recycle bin)', () => {
 
     vi.mocked(syncSkillDistribution).mockClear();
     vi.mocked(uninstallSkill).mockClear();
+    vi.mocked(reinstallSkill).mockClear();
   });
 
   afterEach(() => {
@@ -142,5 +155,73 @@ describe('useSkillStore (recycle bin)', () => {
     expect(useSkillStore.getState().recycleBin).toEqual([kept]);
     expect(vi.mocked(uninstallSkill)).toHaveBeenCalledTimes(1);
     expect(vi.mocked(uninstallSkill)).toHaveBeenCalledWith(expired, TEST_AGENTS);
+  });
+});
+
+describe('useSkillStore (update/adopt)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+
+    useAgentStore.setState({ agents: TEST_AGENTS });
+    useSettingsStore.setState({ recycleBinRetentionDays: 15 });
+    useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
+
+    vi.mocked(syncSkillDistribution).mockClear();
+    vi.mocked(uninstallSkill).mockClear();
+    vi.mocked(reinstallSkill).mockClear();
+  });
+
+  it('adoptSkill marks skill as platform managed', () => {
+    const skill: Skill = {
+      id: 'ext-1',
+      name: 'External Skill',
+      enabledAgents: [],
+      installSource: 'external',
+      isAdopted: false,
+    };
+    useSkillStore.setState({ skills: [skill] });
+
+    useSkillStore.getState().adoptSkill('ext-1', {
+      sourceUrl: 'github.com/foo/bar',
+      enabledAgents: [AgentId.CODEX],
+    });
+
+    const next = useSkillStore.getState().skills[0];
+    expect(next.installSource).toBe('platform');
+    expect(next.isAdopted).toBe(true);
+    expect(next.sourceUrl).toBe('github.com/foo/bar');
+    expect(next.enabledAgents).toEqual([AgentId.CODEX]);
+  });
+
+  it('reInstallSkill throws when sourceUrl missing', async () => {
+    const skill: Skill = { id: 's1', name: 'No Source', enabledAgents: [], installSource: 'external', isAdopted: false };
+    useSkillStore.setState({ skills: [skill] });
+
+    await expect(useSkillStore.getState().reInstallSkill('s1')).rejects.toThrow('该技能尚未关联源码');
+  });
+
+  it('reInstallSkill updates timestamps and syncs distribution', async () => {
+    const skill: Skill = {
+      id: 's1',
+      name: 'Skill One',
+      enabledAgents: [AgentId.CODEX],
+      sourceUrl: 'github.com/foo/bar',
+      installSource: 'platform',
+      isAdopted: true,
+    };
+    useSkillStore.setState({ skills: [skill] });
+
+    await useSkillStore.getState().reInstallSkill('s1');
+
+    expect(vi.mocked(reinstallSkill)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(syncSkillDistribution)).toHaveBeenCalledTimes(1);
+    const [syncedSkill] = vi.mocked(syncSkillDistribution).mock.calls[0];
+    expect(syncedSkill).toMatchObject({ id: 's1', name: 'Skill One' });
+
+    const next = useSkillStore.getState().skills[0];
+    expect(next.lastSync).toBe('2026-01-24T12:00:00Z');
+    expect(next.lastUpdate).toBe('2026-01-24T12:00:00Z');
+    expect(next.installSource).toBe('platform');
+    expect(next.isAdopted).toBe(true);
   });
 });

@@ -2,63 +2,72 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { revealItemInDir } from '@tauri-apps/plugin-opener';
-import { homeDir, join } from '@tauri-apps/api/path';
-
 import SkillCard from './SkillCard';
-import { useSettingsStore } from '../stores/useSettingsStore';
-import type { Skill } from '../types';
+import { AgentId, type AgentInfo, type Skill } from '../types';
+import { useAgentStore } from '../stores/useAgentStore';
+import { useSkillStore } from '../stores/useSkillStore';
 
-vi.mock('@tauri-apps/plugin-opener', () => ({
-  revealItemInDir: vi.fn(),
-}));
-
-vi.mock('@tauri-apps/api/path', () => ({
-  homeDir: vi.fn(async () => '/Users/test'),
-  join: vi.fn(async (...parts: string[]) => parts.join('/')),
-}));
+const TEST_AGENTS: AgentInfo[] = [
+  {
+    id: AgentId.CODEX,
+    name: 'Codex',
+    defaultPath: '~/.codex/skills/',
+    currentPath: '~/.codex/skills/',
+    enabled: true,
+    icon: 'codex',
+  },
+];
 
 describe('SkillCard', () => {
   beforeEach(() => {
     window.localStorage.clear();
-    useSettingsStore.setState({ storagePath: '~/.skillsm', hasCompletedOnboarding: true });
-    vi.mocked(revealItemInDir).mockClear();
-    vi.mocked(homeDir).mockClear();
-    vi.mocked(join).mockClear();
+    useAgentStore.setState({ agents: TEST_AGENTS });
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it('点击卡片可打开对应技能目录', async () => {
+  it('平台受控技能点击“覆盖重装”会调用 reInstallSkill', async () => {
+    const reInstallSkill = vi.fn(async () => {});
+    useSkillStore.setState({ reInstallSkill });
+
     const skill: Skill = {
       id: 'test-skill',
       name: 'Test Skill',
       enabledAgents: [],
+      sourceUrl: 'github.com/foo/bar',
+      installSource: 'platform',
+      isAdopted: true,
     };
 
     render(<SkillCard skill={skill} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('heading', { name: 'Test Skill' }));
+    await user.click(screen.getByTitle('检查并执行更新'));
 
-    expect(vi.mocked(revealItemInDir)).toHaveBeenCalledWith(
-      '/Users/test/.skillsm/Test Skill/SKILL.md',
-    );
+    expect(reInstallSkill).toHaveBeenCalledTimes(1);
+    expect(reInstallSkill).toHaveBeenCalledWith('test-skill');
   });
 
-  it('点击卡片内按钮不应打开目录', async () => {
+  it('外部识别技能点击更新会打开收编引导弹窗', async () => {
+    const reInstallSkill = vi.fn(async () => {});
+    useSkillStore.setState({ reInstallSkill });
+
     const skill: Skill = {
-      id: 'test-skill',
-      name: 'Test Skill',
+      id: 'ext-1',
+      name: 'External Skill',
       enabledAgents: [],
+      installSource: 'external',
+      isAdopted: false,
     };
 
     render(<SkillCard skill={skill} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: '移入垃圾箱' }));
-    expect(vi.mocked(revealItemInDir)).not.toHaveBeenCalled();
+    await user.click(screen.getByTitle('绑定来源后开启自动更新'));
+
+    expect(screen.getByText('绑定来源引导')).toBeTruthy();
+    expect(reInstallSkill).not.toHaveBeenCalled();
   });
 });

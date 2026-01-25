@@ -35,6 +35,11 @@ export interface Skill {
   id: string;
   name: string;
   sourceUrl?: string;
+  installSource?: 'platform' | 'external';
+  isAdopted?: boolean;
+  description?: string;
+  author?: string;
+  tags?: string[];
   enabledAgents: AgentId[];
   lastSync?: string;
   lastUpdate?: string;

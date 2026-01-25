@@ -5,7 +5,6 @@ export enum AgentId {
   CLAWDBOT = 'clawdbot',
   CLINE = 'cline',
   CODEX = 'codex',
-  COMMAND_CODE = 'command-code',
   COPILOT = 'copilot',
   CURSOR = 'cursor',
   DROID = 'droid',
@@ -13,17 +12,12 @@ export enum AgentId {
   GOOSE = 'goose',
   KILO_CODE = 'kilo-code',
   KIRO_CLI = 'kiro-cli',
-  MCPJAM = 'mcpjam',
   OPENCODE = 'opencode',
-  OPENHANDS = 'openhands',
-  PI = 'pi',
   QODER = 'qoder',
   QWEN_CODE = 'qwen-code',
   ROO_CODE = 'roo-code',
   TRAE = 'trae',
   WINDSURF = 'windsurf',
-  ZENCODER = 'zencoder',
-  NEOVATE = 'neovate',
 }
 
 export interface AgentInfo {

@@ -34,8 +34,6 @@ const iconFor = (def: PlatformDefinition): React.FC<{ size?: number; className?:
   return makeImgPlatformIcon(def.icon.src, def.icon.alt);
 };
 
-const GENERIC_ICON = { kind: 'img' as const, src: '/platform-icons/generic.svg', alt: 'generic' };
-
 export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.AMP,
@@ -90,15 +88,6 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     defaultEnabled: true,
     globalPath: '~/.codex/skills/',
     projectPath: '.codex/skills/',
-  },
-  {
-    id: AgentId.COMMAND_CODE,
-    name: 'Command Code',
-    icon: GENERIC_ICON,
-    iconKey: 'commandcode',
-    defaultEnabled: false,
-    globalPath: '~/.commandcode/skills/',
-    projectPath: '.commandcode/skills/',
   },
   {
     id: AgentId.COPILOT,
@@ -164,15 +153,6 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     projectPath: '.kiro/skills/',
   },
   {
-    id: AgentId.MCPJAM,
-    name: 'MCPJam',
-    icon: GENERIC_ICON,
-    iconKey: 'mcpjam',
-    defaultEnabled: false,
-    globalPath: '~/.mcpjam/skills/',
-    projectPath: '.mcpjam/skills/',
-  },
-  {
     id: AgentId.OPENCODE,
     name: 'OpenCode',
     icon: { kind: 'img', src: '/platform-icons/opencode.svg', alt: 'opencode' },
@@ -180,24 +160,6 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     defaultEnabled: false,
     globalPath: '~/.config/opencode/skills/',
     projectPath: '.opencode/skills/',
-  },
-  {
-    id: AgentId.OPENHANDS,
-    name: 'OpenHands',
-    icon: GENERIC_ICON,
-    iconKey: 'openhands',
-    defaultEnabled: false,
-    globalPath: '~/.openhands/skills/',
-    projectPath: '.openhands/skills/',
-  },
-  {
-    id: AgentId.PI,
-    name: 'Pi',
-    icon: GENERIC_ICON,
-    iconKey: 'pi',
-    defaultEnabled: false,
-    globalPath: '~/.pi/agent/skills/',
-    projectPath: '.pi/skills/',
   },
   {
     id: AgentId.QODER,
@@ -243,24 +205,6 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     defaultEnabled: false,
     globalPath: '~/.codeium/windsurf/skills/',
     projectPath: '.windsurf/skills/',
-  },
-  {
-    id: AgentId.ZENCODER,
-    name: 'Zencoder',
-    icon: GENERIC_ICON,
-    iconKey: 'zencoder',
-    defaultEnabled: false,
-    globalPath: '~/.zencoder/skills/',
-    projectPath: '.zencoder/skills/',
-  },
-  {
-    id: AgentId.NEOVATE,
-    name: 'Neovate',
-    icon: GENERIC_ICON,
-    iconKey: 'neovate',
-    defaultEnabled: false,
-    globalPath: '~/.neovate/skills/',
-    projectPath: '.neovate/skills/',
   },
 ];
 

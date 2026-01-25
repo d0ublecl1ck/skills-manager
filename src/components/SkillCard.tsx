@@ -55,17 +55,17 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
           <AlertDialogTrigger asChild>
             <button
               className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
-              title="卸载技能"
-              aria-label="卸载技能"
+              title="移入垃圾箱"
+              aria-label="移入垃圾箱"
             >
               <Trash2 size={16} />
             </button>
           </AlertDialogTrigger>
           <AlertDialogContent className="vercel-border bg-white">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-black">确认卸载？</AlertDialogTitle>
+              <AlertDialogTitle className="text-black">移入垃圾箱？</AlertDialogTitle>
               <AlertDialogDescription className="text-slate-500">
-                将从中心库移除 <span className="mono text-black">{skill.name}</span>，并清理所有已启用平台下的同名目录。
+                将把 <span className="mono text-black">{skill.name}</span> 移入垃圾箱，并从所有已启用平台目录移除。你可以在垃圾箱中一键还原或彻底粉碎。
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -74,7 +74,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
                 className="bg-red-600 text-white hover:bg-red-700"
                 onClick={() => removeSkill(skill.id)}
               >
-                卸载
+                移入垃圾箱
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

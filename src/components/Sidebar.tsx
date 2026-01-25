@@ -4,10 +4,12 @@ import { NavLink, Link } from 'react-router-dom';
 import { ICONS, PLATFORM_ICONS } from '../constants';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
+import { Trash2 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const agents = useAgentStore(state => state.agents);
   const skills = useSkillStore(state => state.skills);
+  const recycleBinCount = useSkillStore(state => state.recycleBin.length);
 
   const enabledAgents = agents.filter(a => a.enabled);
 
@@ -15,6 +17,7 @@ const Sidebar: React.FC = () => {
     { to: '/', Icon: ICONS.Grid, label: '技能库' },
     { to: '/marketplace', Icon: ICONS.Market, label: '技能市场' },
     { to: '/agents', Icon: ICONS.Sync, label: 'Agent 管理' },
+    { to: '/recycle-bin', Icon: Trash2, label: '垃圾箱', badge: recycleBinCount > 0 ? recycleBinCount : null },
     { to: '/settings', Icon: ICONS.Settings, label: '系统设置' },
   ];
 
@@ -37,16 +40,23 @@ const Sidebar: React.FC = () => {
             key={item.to}
             to={item.to}
             className={({ isActive }) => `
-              flex items-center gap-3 px-3 py-2 rounded-md transition-all text-[13px] font-medium
+              flex items-center justify-between px-3 py-2 rounded-md transition-all text-[13px] font-medium
               ${isActive 
                 ? 'bg-slate-50 text-black shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]' 
                 : 'text-slate-500 hover:text-black hover:bg-slate-50'}
             `}
           >
-            <span className="scale-[0.85] opacity-70 group-hover:opacity-100">
-              <item.Icon size={18} />
-            </span>
-            <span>{item.label}</span>
+            <div className="flex items-center gap-3">
+              <span className="scale-[0.85] opacity-70 group-hover:opacity-100">
+                <item.Icon size={18} />
+              </span>
+              <span>{item.label}</span>
+            </div>
+            {item.badge && (
+              <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 text-[10px] rounded-full mono font-bold">
+                {item.badge}
+              </span>
+            )}
           </NavLink>
         ))}
 
@@ -111,4 +121,3 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
-

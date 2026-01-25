@@ -77,6 +77,28 @@ describe('SkillCard', () => {
     expect(reInstallSkill).not.toHaveBeenCalled();
   });
 
+  it('外部识别技能允许开关 Agent', async () => {
+    const toggleAgent = vi.fn();
+    useSkillStore.setState({ toggleAgent });
+
+    const skill: Skill = {
+      id: 'ext-toggle-1',
+      name: 'External Toggle Skill',
+      enabledAgents: [],
+      installSource: 'external',
+      isAdopted: false,
+    };
+
+    render(<SkillCard skill={skill} />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTitle('Codex'));
+
+    expect(toggleAgent).toHaveBeenCalledTimes(1);
+    expect(toggleAgent).toHaveBeenCalledWith('ext-toggle-1', AgentId.CODEX);
+    expect(screen.queryByText('绑定来源引导')).toBeNull();
+  });
+
   it('根据 sourceUrl 域名显示来源名称', () => {
     useSkillStore.setState({ reInstallSkill: vi.fn(async () => {}) });
 

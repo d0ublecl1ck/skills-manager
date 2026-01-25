@@ -90,11 +90,6 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   }, [skill.name, skill.description]);
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
-    if (!isAdopted) {
-      addToast('请先点击下方“绑定来源”以启用管理功能', 'info');
-      setShowAdoptModal(true);
-      return;
-    }
     const isCurrentlyEnabled = skill.enabledAgents.includes(agentId);
     toggleAgent(skill.id, agentId);
     addToast(
@@ -200,7 +195,6 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
               className={`
                 relative w-10 h-10 rounded-lg border flex items-center justify-center transition-all duration-200 active:scale-95
                 ${isEnabled ? 'border-black bg-white shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'border-[#eaeaea] bg-[#fafafa] grayscale opacity-30 hover:opacity-100 hover:grayscale-0 hover:border-[#ccc] hover:bg-white'}
-                ${!isAdopted ? 'cursor-not-allowed' : ''}
               `}
               title={agent.name}
               aria-label={`${agent.name}${isEnabled ? '（已启用）' : '（未启用）'}`}

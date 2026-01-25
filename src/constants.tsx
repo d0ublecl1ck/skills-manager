@@ -34,7 +34,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="https://ampcode.com/amp-mark-color.svg"
+      src="/platform-icons/amp.svg"
       alt="amp"
       className={className}
       style={{ display: 'block' }}
@@ -44,7 +44,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="https://ampcode.com/client-icons/antigravity.png"
+      src="/platform-icons/antigravity.svg"
       alt="antigravity"
       className={className}
       style={{ display: 'block' }}
@@ -56,7 +56,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons/openai.svg"
+      src="/platform-icons/codex.svg"
       alt="codex"
       className={className}
       style={{ display: 'block' }}
@@ -67,7 +67,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons/cursor.svg"
+      src="/platform-icons/cursor.svg"
       alt="cursor"
       className={className}
       style={{ display: 'block' }}
@@ -77,7 +77,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="https://opencode.ai/favicon-96x96-v3.png"
+      src="/platform-icons/opencode.svg"
       alt="opencode"
       className={className}
       style={{ display: 'block' }}
@@ -151,4 +151,3 @@ export const DEFAULT_AGENTS: AgentInfo[] = [
     icon: 'opencode'
   }
 ];
-

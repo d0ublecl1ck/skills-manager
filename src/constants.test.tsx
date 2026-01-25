@@ -11,7 +11,7 @@ describe("PLATFORM_ICONS", () => {
       { id: AgentId.ANTIGRAVITY, expectedSrc: "/platform-icons/antigravity.png" },
       { id: AgentId.CODEX, expectedSrc: "/platform-icons/codex.svg" },
       { id: AgentId.CURSOR, expectedSrc: "/platform-icons/cursor.svg" },
-      { id: AgentId.OPENCODE, expectedSrc: "/platform-icons/opencode.png" },
+      { id: AgentId.OPENCODE, expectedSrc: "/platform-icons/opencode.svg" },
     ];
 
     for (const { id, expectedSrc } of cases) {
@@ -27,4 +27,3 @@ describe("PLATFORM_ICONS", () => {
     }
   });
 });
-

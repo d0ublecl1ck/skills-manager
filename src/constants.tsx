@@ -77,7 +77,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="/platform-icons/opencode.png"
+      src="/platform-icons/opencode.svg"
       alt="opencode"
       className={className}
       style={{ display: 'block' }}

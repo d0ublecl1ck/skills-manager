@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const PROJECT_ROOT = process.cwd();
@@ -22,12 +22,21 @@ const ICONS = [
     filename: "cursor.svg",
   },
   {
-    url: "https://opencode.ai/favicon-96x96-v3.png",
-    filename: "opencode.png",
+    // NOTE: this repo provides `public/platform-icons/opencode.svg` directly.
+    // Keep this entry so the script can validate the file exists.
+    url: null,
+    filename: "opencode.svg",
   },
 ];
 
 async function download({ url, filename }) {
+  if (!url) {
+    const outPath = path.join(OUTPUT_DIR, filename);
+    await access(outPath);
+    console.log(`Using existing ${path.join("public", "platform-icons", filename)}`);
+    return outPath;
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to download ${url} (${response.status})`);

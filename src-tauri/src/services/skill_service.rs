@@ -120,6 +120,16 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
+    [
+        "~/.agents/skills",        // Amp
+        "~/.codex/skills/custom",  // Codex custom
+    ]
+    .iter()
+    .map(|root| expand_tilde(root).join(skill_dir_name))
+    .collect()
+}
+
 #[tauri::command]
 pub(crate) fn bootstrap_skills_store(skills: Vec<Skill>, storage_path: String) -> Result<(), String> {
     let dir = manager_store_root(&storage_path)?;
@@ -205,12 +215,28 @@ pub(crate) fn install_skill_cli(
     let store_root = manager_store_root(&storage_path)?;
     let store_dest = store_root.join(&desired_name);
 
-    if !store_dest.exists() {
-        let global_root = expand_tilde("~/.codex/skills/custom");
-        let global_src = global_root.join(&desired_name);
-        if global_src.exists() && global_src.is_dir() {
-            copy_dir_all(&global_src, &store_dest)?;
+    if store_dest.exists() {
+        return Err(format!(
+            "Skill already exists in manager store: {}",
+            store_dest.display()
+        ));
+    }
+
+    let mut copied = false;
+    for src in candidate_post_install_sources(&desired_name) {
+        if src.exists() && src.is_dir() {
+            copy_dir_all(&src, &store_dest)?;
+            let _ = remove_dir_if_exists(&src);
+            copied = true;
+            break;
         }
+    }
+
+    if !copied {
+        return Err(format!(
+            "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
+            desired_name
+        ));
     }
 
     let now = now_iso();
@@ -270,5 +296,13 @@ mod tests {
             "https://github.com/foo/bar"
         );
         assert_eq!(normalize_install_url("http://example.com/x"), "http://example.com/x");
+    }
+
+    #[test]
+    fn candidate_post_install_sources_prefers_agents_dir_first() {
+        let sources = candidate_post_install_sources("demo-skill");
+        assert!(sources.len() >= 2);
+        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
+        assert!(sources[1].to_string_lossy().contains("/.codex/skills/custom/demo-skill"));
     }
 }

@@ -25,6 +25,7 @@ export interface Skill {
   enabledAgents: AgentId[];
   lastSync?: string;
   lastUpdate?: string;
+  deletedAt?: string;
 }
 
 export interface OperationLog {

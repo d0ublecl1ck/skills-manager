@@ -58,7 +58,7 @@ describe('SkillCard', () => {
     render(<SkillCard skill={skill} />);
     const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: '卸载技能' }));
+    await user.click(screen.getByRole('button', { name: '移入垃圾箱' }));
     expect(vi.mocked(revealItemInDir)).not.toHaveBeenCalled();
   });
 });

@@ -59,6 +59,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   }, [skill.installSource, skill.isAdopted, skill.sourceUrl]);
 
   const sourceLabel = useMemo(() => getSkillSourceLabel(skill.sourceUrl), [skill.sourceUrl]);
+  const showSourceLabel = isAdopted && Boolean(skill.sourceUrl);
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
     if (!isAdopted) {
@@ -111,7 +112,9 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
               </span>
             </div>
           )}
-          <p className="text-[11px] text-slate-400 font-medium truncate">来自 {sourceLabel}</p>
+          {showSourceLabel && (
+            <p className="text-[11px] text-slate-400 font-medium truncate">来自 {sourceLabel}</p>
+          )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button

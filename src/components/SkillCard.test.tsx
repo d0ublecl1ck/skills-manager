@@ -64,6 +64,7 @@ describe('SkillCard', () => {
     };
 
     render(<SkillCard skill={skill} />);
+    expect(screen.queryByText(/^来自 /)).toBeNull();
     const user = userEvent.setup();
 
     await user.click(screen.getByTitle('绑定来源后开启自动更新'));

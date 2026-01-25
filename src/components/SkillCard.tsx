@@ -81,16 +81,17 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     >
       <div className="flex justify-between items-start mb-4">
         <div className="space-y-1 flex-1 min-w-0 mr-2">
-          <h3 className="text-[15px] font-bold text-black tracking-tight leading-tight flex items-center gap-2 flex-wrap">
-            <span className="truncate" data-testid="skill-name">
-              {skill.name}
-            </span>
-            {!isAdopted && (
-              <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[10px] font-bold whitespace-nowrap shrink-0">
+          <h3 className="text-[15px] font-bold text-black tracking-tight leading-tight truncate" data-testid="skill-name">
+            {skill.name}
+          </h3>
+
+          {!isAdopted && (
+            <div className="pt-0.5">
+              <span className="inline-block px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[10px] font-bold whitespace-nowrap">
                 外部识别
               </span>
-            )}
-          </h3>
+            </div>
+          )}
           <p className="text-[11px] text-slate-400 font-medium truncate">来自 {skill.author || 'Unknown'}</p>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">

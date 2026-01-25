@@ -2,7 +2,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Skill, AgentId, OperationLog } from '../types';
-import { syncSkillDistribution, uninstallSkill } from '../services/tauriClient';
+import { uninstallSkill } from '../services/skillService';
+import { syncSkillDistribution } from '../services/syncService';
 import { useAgentStore } from './useAgentStore';
 
 interface SkillState {

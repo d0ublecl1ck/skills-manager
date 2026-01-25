@@ -6,7 +6,7 @@ import MarketplacePage from './pages/MarketplacePage';
 import AgentsPage from './pages/AgentsPage';
 import SettingsPage from './pages/SettingsPage';
 import OnboardingModal from './components/OnboardingModal';
-import { bootstrapSkillsStore } from './services/tauriClient';
+import { bootstrapSkillsStore } from './services/skillService';
 import { useSkillStore } from './stores/useSkillStore';
 
 const App: React.FC = () => {

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Info, Folder, RotateCcw, Download, Trash2, CheckCircle2 } from 'lucide-react';
 import { useSettingsStore } from '../stores/useSettingsStore';
-import { resetStore } from '../services/tauriClient';
+import { resetStore } from '../services/skillService';
 
 const SettingsPage: React.FC = () => {
   const { storagePath, setStoragePath, resetSettings } = useSettingsStore();

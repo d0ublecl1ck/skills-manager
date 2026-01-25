@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ICONS } from '../constants';
-import { installSkill } from '../services/tauriClient';
+import { installSkill } from '../services/skillService';
 import { useSkillStore } from '../stores/useSkillStore';
 import { Globe, ExternalLink } from 'lucide-react';
 

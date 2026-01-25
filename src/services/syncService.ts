@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { AgentInfo, Skill } from '../../types';
+import type { AgentInfo, Skill } from '../types';
 import { storagePath } from './storagePath';
 
 export const syncSkillDistribution = async (skill: Skill, agents: AgentInfo[]) => {
@@ -46,4 +46,3 @@ export const syncAllToManagerStoreWithProgress = async (
     unlisten();
   }
 };
-

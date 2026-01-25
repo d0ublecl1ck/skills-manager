@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AgentInfo, Skill } from '../../types';
+import type { AgentInfo, Skill } from '../types';
 import { storagePath } from './storagePath';
 
 export const bootstrapSkillsStore = async (skills: Skill[]) => {
@@ -22,4 +22,3 @@ export const uninstallSkill = async (skill: Skill, agents: AgentInfo[]) => {
 export const resetStore = async () => {
   await invoke('reset_store', { storagePath: storagePath() });
 };
-

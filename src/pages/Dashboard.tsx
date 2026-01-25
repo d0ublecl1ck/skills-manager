@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
     if (selectedAgent === 'all') return;
     const agentName = agents.find((a) => a.id === selectedAgent)?.name ?? '';
     enableAllSkillsForAgent(selectedAgent as AgentId);
-    addToast(`已为 ${agentName} 开启库中所有已绑定的技能`, 'success');
+    addToast(`已为 ${agentName} 开启库中所有技能`, 'success');
   };
 
   const filteredAndSortedSkills = useMemo(() => {

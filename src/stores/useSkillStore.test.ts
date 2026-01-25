@@ -270,7 +270,7 @@ describe('useSkillStore (enable all)', () => {
     const next = useSkillStore.getState().skills;
     expect(next.find((s) => s.id === 'adopted-missing')?.enabledAgents).toEqual([AgentId.CODEX]);
     expect(next.find((s) => s.id === 'adopted-has')?.enabledAgents).toEqual([AgentId.CODEX]);
-    expect(next.find((s) => s.id === 'external')?.enabledAgents).toEqual([]);
+    expect(next.find((s) => s.id === 'external')?.enabledAgents).toEqual([AgentId.CODEX]);
 
     expect(vi.mocked(syncAllSkillsDistribution)).toHaveBeenCalledTimes(1);
     const [syncedSkills, syncedAgents] = vi.mocked(syncAllSkillsDistribution).mock.calls[0];

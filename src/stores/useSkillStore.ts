@@ -193,7 +193,6 @@ export const useSkillStore = create<SkillState>()(
       enableAllSkillsForAgent: (agentId) => set((state) => {
         let changed = false;
         const skills = state.skills.map((s) => {
-          if (!s.isAdopted) return s;
           if (s.enabledAgents.includes(agentId)) return s;
           changed = true;
           return { ...s, enabledAgents: [...s.enabledAgents, agentId] };

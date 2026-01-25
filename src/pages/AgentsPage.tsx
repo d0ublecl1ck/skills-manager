@@ -28,7 +28,7 @@ const AgentsPage: React.FC = () => {
 
   const handleEnableAll = (agentId: AgentId, agentName: string) => {
     enableAllSkillsForAgent(agentId);
-    addToast(`已为 ${agentName} 开启库中所有已绑定的技能`, 'success');
+    addToast(`已为 ${agentName} 开启库中所有技能`, 'success');
   };
 
   return (

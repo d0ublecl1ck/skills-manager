@@ -1,13 +1,13 @@
-
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { Skill } from '../types';
+import { ExternalLink, RefreshCcw, ShieldPlus, Trash2 } from 'lucide-react';
+
+import type { AgentId, Skill } from '../types';
+import { PLATFORM_ICONS } from '../constants';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
-import { useSettingsStore } from '../stores/useSettingsStore';
-import { PLATFORM_ICONS } from '../constants';
-import { Trash2, CheckSquare } from 'lucide-react';
-import { openSkillFolder } from '../services/openSkillFolder';
+import { useToastStore } from '../stores/useToastStore';
+import AdoptSkillModal from './AdoptSkillModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,168 +25,172 @@ interface SkillCardProps {
 }
 
 const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
-  // 仅获取已在全局设置中启用的 Agent
-  const enabledAgentsInSystem = useAgentStore(useShallow((state) => state.agents.filter(a => a.enabled)));
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [showAdoptModal, setShowAdoptModal] = useState(false);
+
+  const enabledAgentsInSystem = useAgentStore(
+    useShallow((state) => state.agents.filter((a) => a.enabled)),
+  );
   const toggleAgent = useSkillStore((state) => state.toggleAgent);
-  const setSkillAgents = useSkillStore((state) => state.setSkillAgents);
   const removeSkill = useSkillStore((state) => state.removeSkill);
-  const storagePath = useSettingsStore((state) => state.storagePath);
+  const reInstallSkill = useSkillStore((state) => state.reInstallSkill);
+  const addToast = useToastStore((state) => state.addToast);
 
-  // 判断状态逻辑
-  const activeAgentIds = enabledAgentsInSystem.map(a => a.id);
-  const isAllEnabled = activeAgentIds.length > 0 && activeAgentIds.every(id => skill.enabledAgents.includes(id));
-  const hasSomeEnabled = skill.enabledAgents.length > 0;
+  const isAdopted = useMemo(() => {
+    if (typeof skill.isAdopted === 'boolean') return skill.isAdopted;
+    return (skill.installSource ?? 'platform') === 'platform';
+  }, [skill.installSource, skill.isAdopted, skill.sourceUrl]);
 
-  const handleOpenFolder: React.MouseEventHandler<HTMLDivElement> = (e) => {
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('button, a, input, textarea, select')) return;
-    void openSkillFolder(storagePath, skill.name).catch(console.error);
+  const handleToggleAgent = (agentId: AgentId, agentName: string) => {
+    if (!isAdopted) {
+      addToast('该技能尚未收编，请先点击下方的“收编技能”进行关联', 'info');
+      setShowAdoptModal(true);
+      return;
+    }
+    const isCurrentlyEnabled = skill.enabledAgents.includes(agentId);
+    toggleAgent(skill.id, agentId);
+    addToast(
+      isCurrentlyEnabled ? `${skill.name} 已在 ${agentName} 禁用` : `${skill.name} 已在 ${agentName} 启用`,
+      'info',
+    );
   };
 
-  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
+  const handleUpdate = async (e: React.MouseEvent) => {
     e.preventDefault();
-    void openSkillFolder(storagePath, skill.name).catch(console.error);
-  };
+    if (!isAdopted) {
+      setShowAdoptModal(true);
+      return;
+    }
 
-  const handleToggleAll = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isAllEnabled) {
-      setSkillAgents(skill.id, []);
-    } else {
-      setSkillAgents(skill.id, activeAgentIds);
+    if (isUpdating) return;
+
+    setIsUpdating(true);
+    try {
+      await reInstallSkill(skill.id);
+      addToast(`"${skill.name}" 已成功从源重新安装并覆盖`, 'success');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : '更新失败，请检查网络连接', 'error');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   return (
     <div
-      className="bg-white border border-[#eaeaea] rounded-xl p-6 transition-all group hover:border-black vercel-card-hover flex flex-col h-full relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
-      title="点击打开文件夹"
-      role="button"
-      tabIndex={0}
-      onClick={handleOpenFolder}
-      onKeyDown={handleKeyDown}
+      className={`vercel-card bg-white p-6 flex flex-col h-full group hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ${!isAdopted ? 'border-dashed' : ''}`}
     >
-      {/* 顶部标题和删除 */}
       <div className="flex justify-between items-start mb-4">
-        <h3 className="text-[16px] font-bold text-black tracking-tight leading-tight flex-1 pr-4">
-          {skill.name}
-        </h3>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button
-              className="text-slate-300 hover:text-red-500 transition-colors shrink-0"
-              title="移入垃圾箱"
-              aria-label="移入垃圾箱"
-            >
-              <Trash2 size={16} />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="vercel-border bg-white">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-black">移入垃圾箱？</AlertDialogTitle>
-              <AlertDialogDescription className="text-slate-500">
-                将把 <span className="mono text-black">{skill.name}</span> 移入垃圾箱，并从所有已启用平台目录移除。你可以在垃圾箱中一键还原或彻底粉碎。
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-red-600 text-white hover:bg-red-700"
-                onClick={() => removeSkill(skill.id)}
-              >
-                移入垃圾箱
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-
-      <div className="text-[12px] text-slate-400 mono mb-6">
-        {skill.id}
-      </div>
-
-      {/* 分割线 */}
-      <div className="h-px bg-[#f3f3f3] w-full mb-5"></div>
-
-      {/* 平台控制区域 */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">已启用平台</span>
-            <span className="text-[11px] font-medium px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded-full mono">
-              {skill.enabledAgents.length}/{enabledAgentsInSystem.length}
+        <div className="space-y-1 flex-1 min-w-0 mr-2">
+          <h3 className="text-[15px] font-bold text-black tracking-tight leading-tight flex items-center gap-2 flex-wrap">
+            <span className="truncate" data-testid="skill-name">
+              {skill.name}
             </span>
-          </div>
+            {!isAdopted && (
+              <span className="px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded text-[10px] font-bold whitespace-nowrap shrink-0">
+                外部识别
+              </span>
+            )}
+          </h3>
+          <p className="text-[11px] text-slate-400 font-medium truncate">来自 {skill.author || 'Unknown'}</p>
         </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          <button
+            onClick={handleUpdate}
+            disabled={isUpdating}
+            className={`p-1.5 text-slate-400 hover:text-black hover:bg-slate-50 rounded-md transition-all ${isUpdating ? 'animate-spin opacity-50' : 'active:scale-90'}`}
+            title={isAdopted ? '覆盖重装' : '升级为平台受控技能'}
+          >
+            <RefreshCcw size={14} />
+          </button>
 
-        {/* 平台图标列表 */}
-        <div className="flex flex-wrap gap-2.5">
-          {/* 1. 渲染所有已启用的平台图标 */}
-          {enabledAgentsInSystem.map((agent) => {
-            const BrandIcon = PLATFORM_ICONS[agent.id];
-            const isEnabledForSkill = skill.enabledAgents.includes(agent.id);
-            
-            return (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
               <button
-                key={agent.id}
-                onClick={() => toggleAgent(skill.id, agent.id)}
-                title={agent.name}
-                aria-label={`${agent.name}${isEnabledForSkill ? '（已启用）' : '（未启用）'}`}
-                className={`
-                  relative w-10 h-10 rounded-xl border transition-all flex items-center justify-center overflow-hidden
-                  ${isEnabledForSkill 
-                    ? 'border-black bg-white ring-1 ring-black shadow-sm' 
-                    : 'border-[#eaeaea] bg-slate-50 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 hover:border-slate-300'}
-                `}
+                className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-all active:scale-90"
+                title="移动到垃圾箱"
+                aria-label="移动到垃圾箱"
               >
-                {BrandIcon ? (
-                  <BrandIcon size={20} />
-                ) : (
-                  <span className="text-[10px] font-bold uppercase">{agent.name.slice(0, 2)}</span>
-                )}
+                <Trash2 size={14} />
               </button>
-            );
-          })}
+            </AlertDialogTrigger>
+            <AlertDialogContent className="vercel-border bg-white">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-black">移入垃圾箱？</AlertDialogTitle>
+                <AlertDialogDescription className="text-slate-500">
+                  将把 <span className="mono text-black">{skill.name}</span> 移入垃圾箱，并从所有已启用平台目录移除。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 text-white hover:bg-red-700"
+                  onClick={() => removeSkill(skill.id)}
+                >
+                  移入垃圾箱
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </div>
 
-          {/* 2. 全选/取消全选按钮 - 始终排在最后 */}
-          {enabledAgentsInSystem.length > 0 && (
+      <p className="text-[13px] text-[#666] leading-relaxed mb-6 flex-1 line-clamp-2">
+        {skill.description || '暂无描述'}
+      </p>
+
+      <div className="flex flex-wrap gap-2.5 mb-8">
+        {enabledAgentsInSystem.map((agent) => {
+          const BrandIcon = PLATFORM_ICONS[agent.id];
+          const isEnabled = skill.enabledAgents.includes(agent.id);
+          return (
             <button
-              onClick={handleToggleAll}
-              title={isAllEnabled ? "取消全选" : "全选所有平台"}
-              aria-label={isAllEnabled ? "取消全选" : "全选所有平台"}
+              key={agent.id}
+              onClick={() => handleToggleAgent(agent.id, agent.name)}
               className={`
-                relative w-10 h-10 rounded-xl border transition-all flex items-center justify-center
-                ${isAllEnabled 
-                  ? 'border-black bg-black text-white' 
-                  : hasSomeEnabled 
-                    ? 'border-black bg-white text-black ring-1 ring-black'
-                    : 'border-[#eaeaea] bg-slate-50 text-slate-300 hover:border-black hover:text-black'}
+                relative w-10 h-10 rounded-lg border flex items-center justify-center transition-all duration-200 active:scale-95
+                ${isEnabled ? 'border-black bg-white shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'border-[#eaeaea] bg-[#fafafa] grayscale opacity-30 hover:opacity-100 hover:grayscale-0 hover:border-[#ccc] hover:bg-white'}
+                ${!isAdopted ? 'cursor-not-allowed' : ''}
               `}
+              title={agent.name}
+              aria-label={`${agent.name}${isEnabled ? '（已启用）' : '（未启用）'}`}
             >
-              <CheckSquare size={18} />
+              <div className={`transition-transform duration-200 ${isEnabled ? 'scale-100' : 'scale-90'}`}>
+                <BrandIcon size={20} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="pt-4 border-t border-[#eaeaea] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {isAdopted ? (
+            <div className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+              <span className="text-[10px] font-bold text-slate-400 mono uppercase tracking-tight">
+                Platform Managed
+              </span>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAdoptModal(true)}
+              className="flex items-center gap-2 px-3 py-1 bg-black text-white rounded-full text-[11px] font-bold hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
+            >
+              <ShieldPlus size={12} />
+              收编技能
             </button>
           )}
-
-          {enabledAgentsInSystem.length === 0 && (
-            <p className="text-[11px] text-slate-400 italic">请先在 Agent 管理中启用平台</p>
+        </div>
+        <div className="flex gap-2.5">
+          {skill.sourceUrl && (
+            <a href={skill.sourceUrl} target="_blank" className="text-[#999] hover:text-black transition-colors p-1">
+              <ExternalLink size={14} />
+            </a>
           )}
         </div>
       </div>
 
-      {skill.sourceUrl && (
-        <div className="mt-6 flex items-center justify-end">
-          <a
-            href={skill.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-slate-300 hover:text-black transition-colors underline decoration-slate-200"
-          >
-            源码
-          </a>
-        </div>
-      )}
+      <AdoptSkillModal isOpen={showAdoptModal} onClose={() => setShowAdoptModal(false)} skill={skill} />
     </div>
   );
 };

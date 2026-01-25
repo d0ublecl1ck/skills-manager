@@ -33,7 +33,8 @@ export interface AgentInfo {
   currentPath: string;
   enabled: boolean;
   icon: string;
-  suggestedPaths?: string[];
+  projectPath?: string;
+  globalPath?: string;
 }
 
 export interface Skill {

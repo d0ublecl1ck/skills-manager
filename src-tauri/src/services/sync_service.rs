@@ -388,7 +388,6 @@ mod tests {
             current_path: root.to_string_lossy().to_string(),
             enabled,
             icon: "test".to_string(),
-            suggested_paths: vec![],
         }
     }
 
@@ -521,12 +520,10 @@ mod tests {
         let store_root = tmp.join("store");
         let current_root = tmp.join("current");
         let default_root = tmp.join("default");
-        let extra_root = tmp.join("extra");
 
         ensure_dir(&store_root).unwrap();
         ensure_dir(&current_root).unwrap();
         ensure_dir(&default_root).unwrap();
-        ensure_dir(&extra_root).unwrap();
 
         let skill_name = "agent-browser";
         let store_skill_dir = store_root.join(safe_skill_dir_name(skill_name));
@@ -539,12 +536,11 @@ mod tests {
             current_path: current_root.to_string_lossy().to_string(),
             enabled: true,
             icon: "test".to_string(),
-            suggested_paths: vec![extra_root.to_string_lossy().to_string()],
         };
 
         sync_one_skill(&store_root, skill_name, &["x".to_string()], &[agent]).unwrap();
 
-        for root in [current_root, default_root, extra_root] {
+        for root in [current_root, default_root] {
             assert!(
                 root.join(safe_skill_dir_name(skill_name)).join("SKILL.md").exists(),
                 "skill should be copied into {}",

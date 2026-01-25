@@ -24,8 +24,6 @@ pub(crate) struct AgentInfo {
     pub(crate) current_path: String,
     pub(crate) enabled: bool,
     pub(crate) icon: String,
-    #[serde(default)]
-    pub(crate) suggested_paths: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

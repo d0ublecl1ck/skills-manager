@@ -136,9 +136,6 @@ pub(crate) fn agent_roots(agent: &AgentInfo) -> Vec<PathBuf> {
 
     push(&agent.current_path);
     push(&agent.default_path);
-    for p in agent.suggested_paths.iter() {
-        push(p);
-    }
 
     roots
 }

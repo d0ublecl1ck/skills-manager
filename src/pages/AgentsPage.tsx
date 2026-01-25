@@ -67,36 +67,6 @@ const AgentsPage: React.FC = () => {
                   />
                 </div>
 
-                {!!agent.suggestedPaths?.length && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300">快捷</span>
-                    {agent.suggestedPaths.map((p) => {
-                      const label = p.trim().startsWith('~') ? '全局' : '项目';
-                      const selected = agent.currentPath.trim() === p.trim();
-                      return (
-                        <button
-                          key={`${agent.id}:${p}`}
-                          type="button"
-                          disabled={!agent.enabled}
-                          onClick={() => {
-                            updateAgentPath(agent.id, p);
-                            syncAll();
-                          }}
-                          title={p}
-                          className={`
-                            px-2 py-0.5 rounded border text-[11px] font-bold mono transition-all
-                            ${selected
-                              ? 'bg-black text-white border-black'
-                              : 'bg-white text-slate-500 border-[#eaeaea] hover:text-black hover:border-black'}
-                            ${agent.enabled ? '' : 'opacity-40 cursor-not-allowed'}
-                          `}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               <button 

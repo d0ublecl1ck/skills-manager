@@ -15,8 +15,8 @@ export interface PlatformDefinition {
   icon: PlatformIconDef;
   iconKey: string;
   defaultEnabled: boolean;
-  defaultPath: string;
-  suggestedPaths: string[];
+  globalPath: string;
+  projectPath: string;
 }
 
 const makeImgPlatformIcon =
@@ -46,8 +46,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/amp.svg', alt: 'amp' },
     iconKey: 'amp',
     defaultEnabled: false,
-    defaultPath: '~/.config/agents/skills/',
-    suggestedPaths: ['.agents/skills/', '~/.config/agents/skills/'],
+    globalPath: '~/.config/agents/skills/',
+    projectPath: '.agents/skills/',
   },
   {
     id: AgentId.ANTIGRAVITY,
@@ -55,8 +55,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/antigravity.svg', alt: 'antigravity' },
     iconKey: 'antigravity',
     defaultEnabled: false,
-    defaultPath: '~/.gemini/antigravity/skills/',
-    suggestedPaths: ['.agent/skills/', '~/.gemini/antigravity/skills/'],
+    globalPath: '~/.gemini/antigravity/skills/',
+    projectPath: '.agent/skills/',
   },
   {
     id: AgentId.CLAUDE_CODE,
@@ -64,8 +64,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'component', component: ClaudeIcon },
     iconKey: 'claudecode',
     defaultEnabled: true,
-    defaultPath: '~/.claude/skills/',
-    suggestedPaths: ['.claude/skills/', '~/.claude/skills/'],
+    globalPath: '~/.claude/skills/',
+    projectPath: '.claude/skills/',
   },
   {
     id: AgentId.CLAWDBOT,
@@ -73,8 +73,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'clawdbot',
     defaultEnabled: false,
-    defaultPath: '~/.clawdbot/skills/',
-    suggestedPaths: ['skills/', '~/.clawdbot/skills/'],
+    globalPath: '~/.clawdbot/skills/',
+    projectPath: 'skills/',
   },
   {
     id: AgentId.CLINE,
@@ -82,8 +82,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'component', component: ClineIcon },
     iconKey: 'cline',
     defaultEnabled: false,
-    defaultPath: '~/.cline/skills/',
-    suggestedPaths: ['.cline/skills/', '~/.cline/skills/'],
+    globalPath: '~/.cline/skills/',
+    projectPath: '.cline/skills/',
   },
   {
     id: AgentId.CODEX,
@@ -91,8 +91,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/codex.svg', alt: 'codex' },
     iconKey: 'codex',
     defaultEnabled: true,
-    defaultPath: '~/.codex/skills/',
-    suggestedPaths: ['.codex/skills/', '~/.codex/skills/'],
+    globalPath: '~/.codex/skills/',
+    projectPath: '.codex/skills/',
   },
   {
     id: AgentId.COMMAND_CODE,
@@ -100,8 +100,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'commandcode',
     defaultEnabled: false,
-    defaultPath: '~/.commandcode/skills/',
-    suggestedPaths: ['.commandcode/skills/', '~/.commandcode/skills/'],
+    globalPath: '~/.commandcode/skills/',
+    projectPath: '.commandcode/skills/',
   },
   {
     id: AgentId.COPILOT,
@@ -109,8 +109,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'component', component: CopilotIcon },
     iconKey: 'copilot',
     defaultEnabled: false,
-    defaultPath: '~/.copilot/skills/',
-    suggestedPaths: ['.github/skills/', '~/.copilot/skills/'],
+    globalPath: '~/.copilot/skills/',
+    projectPath: '.github/skills/',
   },
   {
     id: AgentId.CURSOR,
@@ -118,8 +118,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/cursor.svg', alt: 'cursor' },
     iconKey: 'cursor',
     defaultEnabled: false,
-    defaultPath: '~/.cursor/skills/',
-    suggestedPaths: ['.cursor/skills/', '~/.cursor/skills/'],
+    globalPath: '~/.cursor/skills/',
+    projectPath: '.cursor/skills/',
   },
   {
     id: AgentId.DROID,
@@ -127,8 +127,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'droid',
     defaultEnabled: false,
-    defaultPath: '~/.factory/skills/',
-    suggestedPaths: ['.factory/skills/', '~/.factory/skills/'],
+    globalPath: '~/.factory/skills/',
+    projectPath: '.factory/skills/',
   },
   {
     id: AgentId.GEMINI_CLI,
@@ -136,8 +136,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'gemini',
     defaultEnabled: false,
-    defaultPath: '~/.gemini/skills/',
-    suggestedPaths: ['.gemini/skills/', '~/.gemini/skills/'],
+    globalPath: '~/.gemini/skills/',
+    projectPath: '.gemini/skills/',
   },
   {
     id: AgentId.GOOSE,
@@ -145,8 +145,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'goose',
     defaultEnabled: false,
-    defaultPath: '~/.config/goose/skills/',
-    suggestedPaths: ['.goose/skills/', '~/.config/goose/skills/'],
+    globalPath: '~/.config/goose/skills/',
+    projectPath: '.goose/skills/',
   },
   {
     id: AgentId.KILO_CODE,
@@ -154,8 +154,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'kilocode',
     defaultEnabled: false,
-    defaultPath: '~/.kilocode/skills/',
-    suggestedPaths: ['.kilocode/skills/', '~/.kilocode/skills/'],
+    globalPath: '~/.kilocode/skills/',
+    projectPath: '.kilocode/skills/',
   },
   {
     id: AgentId.KIRO_CLI,
@@ -163,8 +163,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'kiro',
     defaultEnabled: false,
-    defaultPath: '~/.kiro/skills/',
-    suggestedPaths: ['.kiro/skills/', '~/.kiro/skills/'],
+    globalPath: '~/.kiro/skills/',
+    projectPath: '.kiro/skills/',
   },
   {
     id: AgentId.MCPJAM,
@@ -172,8 +172,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'mcpjam',
     defaultEnabled: false,
-    defaultPath: '~/.mcpjam/skills/',
-    suggestedPaths: ['.mcpjam/skills/', '~/.mcpjam/skills/'],
+    globalPath: '~/.mcpjam/skills/',
+    projectPath: '.mcpjam/skills/',
   },
   {
     id: AgentId.OPENCODE,
@@ -181,8 +181,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/opencode.svg', alt: 'opencode' },
     iconKey: 'opencode',
     defaultEnabled: false,
-    defaultPath: '~/.config/opencode/skills/',
-    suggestedPaths: ['.opencode/skills/', '~/.config/opencode/skills/'],
+    globalPath: '~/.config/opencode/skills/',
+    projectPath: '.opencode/skills/',
   },
   {
     id: AgentId.OPENHANDS,
@@ -190,8 +190,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'openhands',
     defaultEnabled: false,
-    defaultPath: '~/.openhands/skills/',
-    suggestedPaths: ['.openhands/skills/', '~/.openhands/skills/'],
+    globalPath: '~/.openhands/skills/',
+    projectPath: '.openhands/skills/',
   },
   {
     id: AgentId.PI,
@@ -199,8 +199,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'pi',
     defaultEnabled: false,
-    defaultPath: '~/.pi/agent/skills/',
-    suggestedPaths: ['.pi/skills/', '~/.pi/agent/skills/'],
+    globalPath: '~/.pi/agent/skills/',
+    projectPath: '.pi/skills/',
   },
   {
     id: AgentId.QODER,
@@ -208,8 +208,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'qoder',
     defaultEnabled: false,
-    defaultPath: '~/.qoder/skills/',
-    suggestedPaths: ['.qoder/skills/', '~/.qoder/skills/'],
+    globalPath: '~/.qoder/skills/',
+    projectPath: '.qoder/skills/',
   },
   {
     id: AgentId.QWEN_CODE,
@@ -217,8 +217,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'qwen',
     defaultEnabled: false,
-    defaultPath: '~/.qwen/skills/',
-    suggestedPaths: ['.qwen/skills/', '~/.qwen/skills/'],
+    globalPath: '~/.qwen/skills/',
+    projectPath: '.qwen/skills/',
   },
   {
     id: AgentId.ROO_CODE,
@@ -226,8 +226,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'roo',
     defaultEnabled: false,
-    defaultPath: '~/.roo/skills/',
-    suggestedPaths: ['.roo/skills/', '~/.roo/skills/'],
+    globalPath: '~/.roo/skills/',
+    projectPath: '.roo/skills/',
   },
   {
     id: AgentId.TRAE,
@@ -235,8 +235,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'trae',
     defaultEnabled: false,
-    defaultPath: '~/.trae/skills/',
-    suggestedPaths: ['.trae/skills/', '~/.trae/skills/'],
+    globalPath: '~/.trae/skills/',
+    projectPath: '.trae/skills/',
   },
   {
     id: AgentId.WINDSURF,
@@ -244,8 +244,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'windsurf',
     defaultEnabled: false,
-    defaultPath: '~/.codeium/windsurf/skills/',
-    suggestedPaths: ['.windsurf/skills/', '~/.codeium/windsurf/skills/'],
+    globalPath: '~/.codeium/windsurf/skills/',
+    projectPath: '.windsurf/skills/',
   },
   {
     id: AgentId.ZENCODER,
@@ -253,8 +253,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'zencoder',
     defaultEnabled: false,
-    defaultPath: '~/.zencoder/skills/',
-    suggestedPaths: ['.zencoder/skills/', '~/.zencoder/skills/'],
+    globalPath: '~/.zencoder/skills/',
+    projectPath: '.zencoder/skills/',
   },
   {
     id: AgentId.NEOVATE,
@@ -262,8 +262,8 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: GENERIC_ICON,
     iconKey: 'neovate',
     defaultEnabled: false,
-    defaultPath: '~/.neovate/skills/',
-    suggestedPaths: ['.neovate/skills/', '~/.neovate/skills/'],
+    globalPath: '~/.neovate/skills/',
+    projectPath: '.neovate/skills/',
   },
 ];
 
@@ -278,10 +278,10 @@ export const PLATFORM_ICONS = Object.fromEntries(
 export const DEFAULT_AGENTS: AgentInfo[] = PLATFORM_REGISTRY.map((p) => ({
   id: p.id,
   name: p.name,
-  defaultPath: p.defaultPath,
-  currentPath: p.defaultPath,
+  defaultPath: p.globalPath,
+  currentPath: p.globalPath,
   enabled: p.defaultEnabled,
   icon: p.iconKey,
-  suggestedPaths: p.suggestedPaths,
+  projectPath: p.projectPath,
+  globalPath: p.globalPath,
 }));
-

@@ -119,7 +119,23 @@ pub(crate) fn generate_id() -> String {
     format!("{ms:x}{pid:x}")
 }
 
-pub(crate) fn skill_dest_for_agent(agent: &AgentInfo, skill_name: &str) -> PathBuf {
-    expand_tilde(&agent.current_path).join(safe_skill_dir_name(skill_name))
-}
+pub(crate) fn agent_roots(agent: &AgentInfo) -> Vec<PathBuf> {
+    let mut roots: Vec<PathBuf> = vec![];
 
+    let mut push = |candidate: &str| {
+        let trimmed = candidate.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        let p = expand_tilde(trimmed);
+        if roots.iter().any(|v| v == &p) {
+            return;
+        }
+        roots.push(p);
+    };
+
+    push(&agent.current_path);
+    push(&agent.default_path);
+
+    roots
+}

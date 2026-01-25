@@ -4,8 +4,8 @@ use std::process::Command;
 
 use crate::models::{AgentInfo, Skill};
 use crate::utils::{
-    copy_dir_all, ensure_dir, expand_tilde, generate_id, manager_store_root, now_iso,
-    remove_dir_if_exists, safe_skill_dir_name, skill_dest_for_agent, unique_skill_dir_name,
+    agent_roots, copy_dir_all, ensure_dir, expand_tilde, generate_id, manager_store_root, now_iso,
+    remove_dir_if_exists, safe_skill_dir_name, unique_skill_dir_name,
 };
 
 fn normalize_install_url(input: &str) -> String {
@@ -122,8 +122,10 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
 
 fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
     [
-        "~/.agents/skills",        // Amp
+        "~/.config/agents/skills", // Amp (XDG-style)
+        "~/.agents/skills",        // Amp (legacy)
         "~/.codex/skills/custom",  // Codex custom
+        "~/.codex/skills",         // Codex
     ]
     .iter()
     .map(|root| expand_tilde(root).join(skill_dir_name))
@@ -227,7 +229,7 @@ pub(crate) async fn install_skill_cli(
 
         if !copied {
             return Err(format!(
-                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
+                "Installed skill directory not found under known locations (expected one of ~/.config/agents/skills/{0}, ~/.agents/skills/{0}, ~/.codex/skills/custom/{0}, ~/.codex/skills/{0})",
                 desired_name
             ));
         }
@@ -260,8 +262,10 @@ pub(crate) fn uninstall_skill(
     let _ = remove_dir_if_exists(&src);
 
     for agent in agents {
-        let dst = skill_dest_for_agent(&agent, &skill_name);
-        let _ = remove_dir_if_exists(&dst);
+        for root in agent_roots(&agent) {
+            let dst = root.join(safe_skill_dir_name(&skill_name));
+            let _ = remove_dir_if_exists(&dst);
+        }
     }
 
     Ok(())
@@ -297,8 +301,13 @@ mod tests {
     #[test]
     fn candidate_post_install_sources_prefers_agents_dir_first() {
         let sources = candidate_post_install_sources("demo-skill");
-        assert!(sources.len() >= 2);
-        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
-        assert!(sources[1].to_string_lossy().contains("/.codex/skills/custom/demo-skill"));
+        assert!(sources.len() >= 4);
+        assert!(sources[0]
+            .to_string_lossy()
+            .contains("/.config/agents/skills/demo-skill"));
+        assert!(sources[1].to_string_lossy().contains("/.agents/skills/demo-skill"));
+        assert!(sources[2]
+            .to_string_lossy()
+            .contains("/.codex/skills/custom/demo-skill"));
     }
 }

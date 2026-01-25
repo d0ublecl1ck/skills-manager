@@ -9,9 +9,23 @@ describe("PLATFORM_ICONS", () => {
     const cases: Array<{ id: AgentId; expectedSrc: string }> = [
       { id: AgentId.AMP, expectedSrc: "/platform-icons/amp.svg" },
       { id: AgentId.ANTIGRAVITY, expectedSrc: "/platform-icons/antigravity.svg" },
+      { id: AgentId.CLAUDE_CODE, expectedSrc: "/platform-icons/claude-code.svg" },
+      { id: AgentId.CLAWDBOT, expectedSrc: "/platform-icons/clawdbot.svg" },
+      { id: AgentId.CLINE, expectedSrc: "/platform-icons/cline.svg" },
       { id: AgentId.CODEX, expectedSrc: "/platform-icons/codex.svg" },
+      { id: AgentId.COPILOT, expectedSrc: "/platform-icons/copilot.svg" },
       { id: AgentId.CURSOR, expectedSrc: "/platform-icons/cursor.svg" },
+      { id: AgentId.DROID, expectedSrc: "/platform-icons/droid.svg" },
+      { id: AgentId.GEMINI_CLI, expectedSrc: "/platform-icons/gemini-cli.svg" },
+      { id: AgentId.GOOSE, expectedSrc: "/platform-icons/goose.svg" },
+      { id: AgentId.KILO_CODE, expectedSrc: "/platform-icons/kilo-code.svg" },
       { id: AgentId.OPENCODE, expectedSrc: "/platform-icons/opencode.svg" },
+      { id: AgentId.KIRO_CLI, expectedSrc: "/platform-icons/kiro-cli.svg" },
+      { id: AgentId.QODER, expectedSrc: "/platform-icons/qoder.svg" },
+      { id: AgentId.QWEN_CODE, expectedSrc: "/platform-icons/qwen-code.svg" },
+      { id: AgentId.ROO_CODE, expectedSrc: "/platform-icons/roo-code.svg" },
+      { id: AgentId.TRAE, expectedSrc: "/platform-icons/trae.svg" },
+      { id: AgentId.WINDSURF, expectedSrc: "/platform-icons/windsurf.svg" },
     ];
 
     for (const { id, expectedSrc } of cases) {

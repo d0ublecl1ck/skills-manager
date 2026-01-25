@@ -34,4 +34,3 @@ pub(crate) struct SyncAllToManagerProgressLog {
     pub(crate) status: String,
     pub(crate) progress: f64,
 }
-

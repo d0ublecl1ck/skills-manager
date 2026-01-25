@@ -19,6 +19,7 @@ const MarketplacePage: React.FC = () => {
   const [selectedAgentIds, setSelectedAgentIds] = useState<AgentId[]>([]);
 
   const agents = useAgentStore((s) => s.agents);
+  const supportedAgents = useMemo(() => agents, [agents]);
   const enabledAgents = useMemo(() => agents.filter((a) => a.enabled), [agents]);
   const addSkill = useSkillStore((state) => state.addSkill);
   const addLog = useSkillStore((state) => state.addLog);
@@ -66,7 +67,11 @@ const MarketplacePage: React.FC = () => {
       const newSkill = await installSkillCli(repoUrl.trim(), skillName);
       const withAgents = { ...newSkill, enabledAgents: selectedAgentIds };
       addSkill(withAgents);
-      await syncSkillDistribution(withAgents, agents);
+
+      const agentsForSync = agents.map((a) =>
+        selectedAgentIds.includes(a.id) ? { ...a, enabled: true } : a
+      );
+      await syncSkillDistribution(withAgents, agentsForSync);
       addLog({
         action: 'install',
         skillId: withAgents.name,
@@ -97,9 +102,9 @@ const MarketplacePage: React.FC = () => {
 
   const toggleAllAgents = () => {
     setSelectedAgentIds((prev) => {
-      if (enabledAgents.length === 0) return prev;
-      const allSelected = enabledAgents.every((a) => prev.includes(a.id));
-      return allSelected ? [] : enabledAgents.map((a) => a.id);
+      if (supportedAgents.length === 0) return prev;
+      const allSelected = supportedAgents.every((a) => prev.includes(a.id));
+      return allSelected ? [] : supportedAgents.map((a) => a.id);
     });
   };
 
@@ -177,7 +182,7 @@ const MarketplacePage: React.FC = () => {
         open={showConfirmModal}
         repoUrl={repoUrl}
         skillName={customName}
-        enabledAgents={enabledAgents}
+        agents={supportedAgents}
         selectedAgentIds={selectedAgentIds}
         onChangeSkillName={setCustomName}
         onToggleAgent={toggleAgent}

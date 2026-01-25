@@ -7,7 +7,7 @@ type Props = {
   open: boolean;
   repoUrl: string;
   skillName: string;
-  enabledAgents: AgentInfo[];
+  agents: AgentInfo[];
   selectedAgentIds: AgentId[];
   onChangeSkillName: (name: string) => void;
   onToggleAgent: (id: AgentId) => void;
@@ -20,7 +20,7 @@ const InstallSkillModal: React.FC<Props> = ({
   open,
   repoUrl,
   skillName,
-  enabledAgents,
+  agents,
   selectedAgentIds,
   onChangeSkillName,
   onToggleAgent,
@@ -29,9 +29,9 @@ const InstallSkillModal: React.FC<Props> = ({
   onConfirm,
 }) => {
   const allSelected = useMemo(() => {
-    if (enabledAgents.length === 0) return false;
-    return enabledAgents.every((a) => selectedAgentIds.includes(a.id));
-  }, [enabledAgents, selectedAgentIds]);
+    if (agents.length === 0) return false;
+    return agents.every((a) => selectedAgentIds.includes(a.id));
+  }, [agents, selectedAgentIds]);
 
   if (!open) return null;
 
@@ -84,36 +84,31 @@ const InstallSkillModal: React.FC<Props> = ({
               </button>
             </div>
 
-            {enabledAgents.length === 0 ? (
-              <div className="text-[12px] text-slate-400 bg-[#fafafa] border border-[#eaeaea] rounded-xl px-4 py-3">
-                当前没有启用的 Agent，请先在设置中启用平台。
-              </div>
-            ) : (
-              <div className="grid grid-cols-6 gap-2">
-                {enabledAgents.map((agent) => {
-                  const selected = selectedAgentIds.includes(agent.id);
-                  const Icon = PLATFORM_ICONS[agent.id];
-                  return (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      className={`group flex h-12 items-center justify-center rounded-xl border transition-all ${
-                        selected
-                          ? 'border-black bg-white shadow-[0_6px_18px_rgba(0,0,0,0.10)]'
-                          : 'border-[#eaeaea] bg-[#fafafa] opacity-70 grayscale'
-                      }`}
-                      onClick={() => onToggleAgent(agent.id)}
-                      aria-label={agent.name}
-                      title={agent.name}
-                    >
-                      <span className="block transition-transform group-active:scale-95">
-                        <Icon size={20} className={selected ? '' : 'opacity-70'} />
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-6 gap-2">
+              {agents.map((agent) => {
+                const selected = selectedAgentIds.includes(agent.id);
+                const Icon = PLATFORM_ICONS[agent.id];
+                const disabledHint = agent.enabled ? '' : '（未启用）';
+                return (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    className={`group flex h-12 items-center justify-center rounded-xl border transition-all ${
+                      selected
+                        ? 'border-black bg-white shadow-[0_6px_18px_rgba(0,0,0,0.10)]'
+                        : 'border-[#eaeaea] bg-[#fafafa] opacity-70 grayscale'
+                    }`}
+                    onClick={() => onToggleAgent(agent.id)}
+                    aria-label={agent.name}
+                    title={`${agent.name}${disabledHint}`}
+                  >
+                    <span className="block transition-transform group-active:scale-95">
+                      <Icon size={20} className={selected ? '' : 'opacity-70'} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
 
             <p className="text-[11px] text-slate-400">
               提示：点击平台图标可切换；右上角可一键{allSelected ? '取消全选' : '全选'}。
@@ -147,4 +142,3 @@ const InstallSkillModal: React.FC<Props> = ({
 };
 
 export default InstallSkillModal;
-

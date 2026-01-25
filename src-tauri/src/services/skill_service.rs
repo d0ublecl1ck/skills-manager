@@ -190,65 +190,61 @@ pub(crate) fn install_skill(repo_url: String, storage_path: String) -> Result<Sk
 }
 
 #[tauri::command]
-pub(crate) fn install_skill_cli(
+pub(crate) async fn install_skill_cli(
     repo_url: String,
     skill_name: String,
     storage_path: String,
 ) -> Result<Skill, String> {
-    if skill_name.trim().is_empty() {
-        return Err("skillName is empty".to_string());
-    }
-
-    let url = normalize_install_url(&repo_url);
-    let desired_name = safe_skill_dir_name(&skill_name);
-
-    let mut npx = Command::new("npx");
-    npx.arg("skills")
-        .arg("add")
-        .arg(&url)
-        .arg("--skill")
-        .arg(&desired_name)
-        .arg("-y")
-        .arg("-g");
-    run_cmd(npx, "npx skills add")?;
-
-    let store_root = manager_store_root(&storage_path)?;
-    let store_dest = store_root.join(&desired_name);
-
-    if store_dest.exists() {
-        return Err(format!(
-            "Skill already exists in manager store: {}",
-            store_dest.display()
-        ));
-    }
-
-    let mut copied = false;
-    for src in candidate_post_install_sources(&desired_name) {
-        if src.exists() && src.is_dir() {
-            copy_dir_all(&src, &store_dest)?;
-            let _ = remove_dir_if_exists(&src);
-            copied = true;
-            break;
+    tauri::async_runtime::spawn_blocking(move || {
+        if skill_name.trim().is_empty() {
+            return Err("skillName is empty".to_string());
         }
-    }
 
-    if !copied {
-        return Err(format!(
-            "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
-            desired_name
-        ));
-    }
+        let url = normalize_install_url(&repo_url);
+        let desired_name = safe_skill_dir_name(&skill_name);
 
-    let now = now_iso();
+        let mut npx = Command::new("npx");
+        npx.arg("skills")
+            .arg("add")
+            .arg(&url)
+            .arg("--skill")
+            .arg(&desired_name)
+            .arg("-y")
+            .arg("-g");
+        run_cmd(npx, "npx skills add")?;
 
-    Ok(Skill {
-        id: generate_id(),
-        name: desired_name,
-        source_url: Some(repo_url),
-        enabled_agents: vec![],
-        last_sync: Some(now.clone()),
-        last_update: Some(now),
+        let store_root = manager_store_root(&storage_path)?;
+        let store_dest = store_root.join(&desired_name);
+
+        let mut copied = false;
+        for src in candidate_post_install_sources(&desired_name) {
+            if src.exists() && src.is_dir() {
+                copy_dir_all(&src, &store_dest)?;
+                copied = true;
+                break;
+            }
+        }
+
+        if !copied {
+            return Err(format!(
+                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
+                desired_name
+            ));
+        }
+
+        let now = now_iso();
+
+        Ok(Skill {
+            id: generate_id(),
+            name: desired_name,
+            source_url: Some(repo_url),
+            enabled_agents: vec![],
+            last_sync: Some(now.clone()),
+            last_update: Some(now),
+        })
     })
+    .await
+    .map_err(|e| format!("install_skill_cli task join error: {e}"))?
 }
 
 #[tauri::command]

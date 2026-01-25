@@ -16,6 +16,8 @@ vi.mock('../services/skillService', () => ({
 }));
 
 vi.mock('../services/syncService', () => ({
+  syncAllSkillsDistribution: vi.fn(() => Promise.resolve()),
+  syncAllSkillsDistributionWithProgress: vi.fn(() => Promise.resolve()),
   syncSkillDistribution: vi.fn(() => Promise.resolve()),
 }));
 

@@ -17,6 +17,30 @@ export const syncAllSkillsDistribution = async (skills: Skill[], agents: AgentIn
   await invoke('sync_all_skills_distribution', { skills, agents, storagePath: storagePath() });
 };
 
+export type SyncAllSkillsDistributionProgressLog = {
+  id: string;
+  label: string;
+  status: 'loading' | 'success' | 'error';
+  progress: number;
+};
+
+export const syncAllSkillsDistributionWithProgress = async (
+  skills: Skill[],
+  agents: AgentInfo[],
+  onProgress: (log: SyncAllSkillsDistributionProgressLog) => void,
+): Promise<void> => {
+  const unlisten = await listen<SyncAllSkillsDistributionProgressLog>(
+    'sync_all_skills_distribution:progress',
+    (event) => onProgress(event.payload),
+  );
+
+  try {
+    await invoke('sync_all_skills_distribution_with_progress', { skills, agents, storagePath: storagePath() });
+  } finally {
+    unlisten();
+  }
+};
+
 export const syncAllToManagerStore = async (agents: AgentInfo[]): Promise<Skill[]> => {
   return await invoke<Skill[]>('sync_all_to_manager_store', { agents, storagePath: storagePath() });
 };

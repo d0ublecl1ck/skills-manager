@@ -1,5 +1,6 @@
 
 import { create } from 'zustand';
+import type { AgentId } from '../types';
 
 interface UIState {
   isFeedbackModalOpen: boolean;
@@ -8,6 +9,11 @@ interface UIState {
   setSyncModalOpen: (open: boolean) => void;
   isDevModalOpen: boolean;
   setDevModalOpen: (open: boolean) => void;
+  isDistributionModalOpen: boolean;
+  distributionAgentId: AgentId | null;
+  distributionAgentName: string;
+  openDistributionModal: (agentId: AgentId, agentName: string) => void;
+  closeDistributionModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -17,4 +23,10 @@ export const useUIStore = create<UIState>((set) => ({
   setSyncModalOpen: (open: boolean) => set({ isSyncModalOpen: open }),
   isDevModalOpen: false,
   setDevModalOpen: (open: boolean) => set({ isDevModalOpen: open }),
+  isDistributionModalOpen: false,
+  distributionAgentId: null,
+  distributionAgentName: '',
+  openDistributionModal: (agentId: AgentId, agentName: string) =>
+    set({ isDistributionModalOpen: true, distributionAgentId: agentId, distributionAgentName: agentName }),
+  closeDistributionModal: () => set({ isDistributionModalOpen: false, distributionAgentId: null, distributionAgentName: '' }),
 }));

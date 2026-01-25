@@ -85,7 +85,8 @@ pub(crate) fn copy_dir_all(from: &Path, to: &Path) -> Result<(), String> {
     remove_dir_if_exists(to)?;
     ensure_dir(to)?;
 
-    for entry in fs::read_dir(from).map_err(|e| format!("Failed to read dir {}: {e}", from.display()))?
+    for entry in
+        fs::read_dir(from).map_err(|e| format!("Failed to read dir {}: {e}", from.display()))?
     {
         let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
         let file_type = entry

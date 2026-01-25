@@ -2,14 +2,17 @@
 import React from 'react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { ICONS, PLATFORM_ICONS } from '../constants';
+import { useUIStore } from '../stores/useUIStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { syncAllSkillsDistribution } from '../services/syncService';
 import { AgentId } from '../types';
+import { CheckCheck } from 'lucide-react';
 
 const AgentsPage: React.FC = () => {
   const agents = useAgentStore(state => state.agents);
   const updateAgentPath = useAgentStore(state => state.updateAgentPath);
   const toggleAgentEnabled = useAgentStore(state => state.toggleAgentEnabled);
+  const openDistributionModal = useUIStore((state) => state.openDistributionModal);
 
   const syncAll = () => {
     const updatedAgents = useAgentStore.getState().agents;
@@ -20,6 +23,10 @@ const AgentsPage: React.FC = () => {
   const handleToggleEnabled = (agentId: AgentId) => {
     toggleAgentEnabled(agentId);
     syncAll();
+  };
+
+  const handleEnableAll = (agentId: AgentId, agentName: string) => {
+    openDistributionModal(agentId, agentName);
   };
 
   return (
@@ -69,17 +76,32 @@ const AgentsPage: React.FC = () => {
 
               </div>
 
-              <button 
-                onClick={() => handleToggleEnabled(agent.id)}
-                className={`
-                  px-4 py-1.5 rounded-md text-[12px] font-bold transition-all border
-                  ${agent.enabled 
-                    ? 'bg-white text-slate-500 border-[#eaeaea] hover:text-black hover:border-black' 
-                    : 'bg-black text-white border-black'}
-                `}
-              >
-                {agent.enabled ? '禁用' : '启用'}
-              </button>
+              <div className="flex items-center gap-2">
+                {agent.enabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleEnableAll(agent.id, agent.name)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold text-slate-500 hover:text-black hover:bg-slate-50 transition-all border border-transparent hover:border-[#eaeaea]"
+                    title="将库中所有技能分发至此平台"
+                    aria-label={`批量开启 ${agent.name} 的所有技能`}
+                  >
+                    <CheckCheck size={14} />
+                    批量开启
+                  </button>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => handleToggleEnabled(agent.id)}
+                  className={`
+                    px-4 py-1.5 rounded-md text-[12px] font-bold transition-all border
+                    ${agent.enabled 
+                      ? 'bg-white text-slate-500 border-[#eaeaea] hover:text-black hover:border-black' 
+                      : 'bg-black text-white border-black'}
+                  `}
+                >
+                  {agent.enabled ? '禁用' : '启用'}
+                </button>
+              </div>
             </div>
           );
         })}

@@ -34,3 +34,12 @@ pub(crate) struct SyncAllToManagerProgressLog {
     pub(crate) status: String,
     pub(crate) progress: f64,
 }
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SyncAllSkillsDistributionProgressLog {
+    pub(crate) id: String,
+    pub(crate) label: String,
+    pub(crate) status: String,
+    pub(crate) progress: f64,
+}

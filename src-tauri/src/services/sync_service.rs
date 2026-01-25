@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 
 use tauri::Emitter;
 
-use crate::models::{AgentInfo, Skill, SyncAllToManagerProgressLog};
+use crate::models::{
+    AgentInfo, Skill, SyncAllSkillsDistributionProgressLog, SyncAllToManagerProgressLog,
+};
 use crate::utils::{
     agent_roots, copy_dir_all, ensure_dir, manager_store_root, now_iso, remove_dir_if_exists,
     safe_skill_dir_name,
@@ -183,8 +185,8 @@ fn should_replace_skill_dir(candidate_src: &Path, existing_dst: &Path) -> bool {
 }
 
 fn ensure_skill_md_has_yaml_frontmatter(path: &Path, skill_name: &str) -> Result<(), String> {
-    let content = fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
     if skill_md_starts_with_yaml_frontmatter(&content) {
         return Ok(());
     }
@@ -289,20 +291,114 @@ pub(crate) fn sync_skill_distribution(
 }
 
 #[tauri::command]
-pub(crate) fn sync_all_skills_distribution(
+pub(crate) async fn sync_all_skills_distribution(
     skills: Vec<Skill>,
     agents: Vec<AgentInfo>,
     storage_path: String,
 ) -> Result<(), String> {
-    let store_root = manager_store_root(&storage_path)?;
-    for skill in skills {
-        sync_one_skill(&store_root, &skill.name, &skill.enabled_agents, &agents)?;
-    }
-    Ok(())
+    sync_all_skills_distribution_inner(None, skills, agents, storage_path).await
 }
 
 #[tauri::command]
-pub(crate) fn sync_all_to_manager_store(agents: Vec<AgentInfo>, storage_path: String) -> Result<Vec<Skill>, String> {
+pub(crate) async fn sync_all_skills_distribution_with_progress(
+    app: tauri::AppHandle,
+    skills: Vec<Skill>,
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<(), String> {
+    sync_all_skills_distribution_inner(Some(app), skills, agents, storage_path).await
+}
+
+async fn sync_all_skills_distribution_inner(
+    app: Option<tauri::AppHandle>,
+    skills: Vec<Skill>,
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<(), String> {
+    let emit = |app: &Option<tauri::AppHandle>, payload: SyncAllSkillsDistributionProgressLog| {
+        if let Some(app) = app {
+            let _ = app.emit("sync_all_skills_distribution:progress", payload);
+        }
+    };
+
+    emit(
+        &app,
+        SyncAllSkillsDistributionProgressLog {
+            id: "init".to_string(),
+            label: "正在准备批量分发任务...".to_string(),
+            status: "loading".to_string(),
+            progress: 0.0,
+        },
+    );
+
+    let app_for_worker = app.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
+        let store_root = manager_store_root(&storage_path)?;
+        let total = skills.len().max(1) as f64;
+
+        for (idx, skill) in skills.iter().enumerate() {
+            let progress = (idx as f64 / total) * 100.0;
+            emit(
+                &app_for_worker,
+                SyncAllSkillsDistributionProgressLog {
+                    id: format!("sync-{}", skill.id),
+                    label: format!("正在分发技能: {}", skill.name),
+                    status: "loading".to_string(),
+                    progress,
+                },
+            );
+
+            sync_one_skill(&store_root, &skill.name, &skill.enabled_agents, &agents)?;
+
+            let done_progress = ((idx + 1) as f64 / total) * 100.0;
+            emit(
+                &app_for_worker,
+                SyncAllSkillsDistributionProgressLog {
+                    id: format!("sync-{}", skill.id),
+                    label: format!("正在分发技能: {}", skill.name),
+                    status: "success".to_string(),
+                    progress: done_progress,
+                },
+            );
+        }
+
+        emit(
+            &app_for_worker,
+            SyncAllSkillsDistributionProgressLog {
+                id: "done".to_string(),
+                label: "分发完成".to_string(),
+                status: "success".to_string(),
+                progress: 100.0,
+            },
+        );
+
+        Ok(())
+    })
+    .await;
+
+    match result {
+        Ok(inner) => inner,
+        Err(join_err) => {
+            let msg = format!("分发任务异常终止: {join_err}");
+            emit(
+                &app,
+                SyncAllSkillsDistributionProgressLog {
+                    id: "error".to_string(),
+                    label: msg.clone(),
+                    status: "error".to_string(),
+                    progress: 100.0,
+                },
+            );
+            Err(msg)
+        }
+    }
+}
+
+#[tauri::command]
+pub(crate) fn sync_all_to_manager_store(
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<Vec<Skill>, String> {
     sync_all_to_manager_store_inner(None, agents, storage_path)
 }
 
@@ -521,12 +617,9 @@ mod tests {
             agent("b", "B", &agent_b_root, true),
         ];
 
-        let _skills = sync_all_to_manager_store_inner(
-            None,
-            agents,
-            store_root.to_string_lossy().to_string(),
-        )
-        .unwrap();
+        let _skills =
+            sync_all_to_manager_store_inner(None, agents, store_root.to_string_lossy().to_string())
+                .unwrap();
 
         let content = fs::read_to_string(store_root.join(skill_dir).join("SKILL.md")).unwrap();
         assert!(
@@ -556,7 +649,9 @@ mod tests {
         let agents = vec![agent("codex", "Codex", &codex_root, true)];
         sync_one_skill(&store_root, skill_name, &["codex".to_string()], &agents).unwrap();
 
-        let dst_skill_md = codex_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md");
+        let dst_skill_md = codex_root
+            .join(safe_skill_dir_name(skill_name))
+            .join("SKILL.md");
         let content = fs::read_to_string(dst_skill_md).unwrap();
         assert!(
             content.starts_with("---\n") || content.starts_with("---\r\n"),
@@ -589,11 +684,15 @@ mod tests {
 
         // Create pre-existing folders in both agents to ensure removal/copy behavior is observable.
         write_file(
-            &enabled_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md"),
+            &enabled_root
+                .join(safe_skill_dir_name(skill_name))
+                .join("SKILL.md"),
             "# old\n",
         );
         write_file(
-            &disabled_root.join(safe_skill_dir_name(skill_name)).join("SKILL.md"),
+            &disabled_root
+                .join(safe_skill_dir_name(skill_name))
+                .join("SKILL.md"),
             "# keep\n",
         );
 
@@ -646,7 +745,9 @@ mod tests {
 
         for root in [current_root, default_root] {
             assert!(
-                root.join(safe_skill_dir_name(skill_name)).join("SKILL.md").exists(),
+                root.join(safe_skill_dir_name(skill_name))
+                    .join("SKILL.md")
+                    .exists(),
                 "skill should be copied into {}",
                 root.display()
             );

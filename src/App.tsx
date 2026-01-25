@@ -8,6 +8,7 @@ import SettingsPage from './pages/SettingsPage';
 import RecycleBinPage from './pages/RecycleBinPage';
 import OnboardingModal from './components/OnboardingModal';
 import ToastHost from './components/ToastHost';
+import DistributionModal from './components/DistributionModal';
 import { bootstrapSkillsStore } from './services/skillService';
 import { useSkillStore } from './stores/useSkillStore';
 
@@ -28,6 +29,7 @@ const App: React.FC = () => {
         </Routes>
       </Layout>
       <OnboardingModal />
+      <DistributionModal />
       <ToastHost />
     </Router>
   );

@@ -24,6 +24,23 @@ interface SkillCardProps {
   skill: Skill;
 }
 
+const getSkillSourceLabel = (sourceUrl?: string) => {
+  if (!sourceUrl) return 'Unknown';
+  try {
+    const url = sourceUrl.includes('://') ? new URL(sourceUrl) : new URL(`https://${sourceUrl}`);
+    const hostname = url.hostname.replace(/^www\./, '').toLowerCase();
+
+    if (hostname === 'github.com') return 'GitHub';
+    if (hostname === 'vercel.com') return 'Vercel';
+
+    const firstPart = hostname.split('.')[0];
+    if (!firstPart) return 'Unknown';
+    return firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+  } catch {
+    return 'Unknown';
+  }
+};
+
 const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAdoptModal, setShowAdoptModal] = useState(false);
@@ -40,6 +57,8 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     if (typeof skill.isAdopted === 'boolean') return skill.isAdopted;
     return (skill.installSource ?? 'platform') === 'platform';
   }, [skill.installSource, skill.isAdopted, skill.sourceUrl]);
+
+  const sourceLabel = useMemo(() => getSkillSourceLabel(skill.sourceUrl), [skill.sourceUrl]);
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
     if (!isAdopted) {
@@ -92,7 +111,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
               </span>
             </div>
           )}
-          <p className="text-[11px] text-slate-400 font-medium truncate">来自 {skill.author || 'Unknown'}</p>
+          <p className="text-[11px] text-slate-400 font-medium truncate">来自 {sourceLabel}</p>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
           <button

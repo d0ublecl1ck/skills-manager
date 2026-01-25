@@ -7,6 +7,10 @@ import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
 
+vi.mock('../services/skillMdService', () => ({
+  getSkillDescriptionFromMd: vi.fn(async () => null),
+}));
+
 const TEST_AGENTS: AgentInfo[] = [
   {
     id: AgentId.CODEX,

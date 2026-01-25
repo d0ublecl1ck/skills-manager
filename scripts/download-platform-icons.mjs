@@ -10,8 +10,10 @@ const ICONS = [
     filename: "amp.svg",
   },
   {
-    url: "https://ampcode.com/client-icons/antigravity.png",
-    filename: "antigravity.png",
+    // NOTE: this repo provides `public/platform-icons/antigravity.svg` directly.
+    // Keep this entry so the script can validate the file exists.
+    url: null,
+    filename: "antigravity.svg",
   },
   {
     url: "https://registry.npmmirror.com/@lobehub/icons-static-svg/latest/files/icons/openai.svg",

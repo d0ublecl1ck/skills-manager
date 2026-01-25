@@ -8,7 +8,7 @@ describe("PLATFORM_ICONS", () => {
   it("uses local asset paths for image-based platform icons", () => {
     const cases: Array<{ id: AgentId; expectedSrc: string }> = [
       { id: AgentId.AMP, expectedSrc: "/platform-icons/amp.svg" },
-      { id: AgentId.ANTIGRAVITY, expectedSrc: "/platform-icons/antigravity.png" },
+      { id: AgentId.ANTIGRAVITY, expectedSrc: "/platform-icons/antigravity.svg" },
       { id: AgentId.CODEX, expectedSrc: "/platform-icons/codex.svg" },
       { id: AgentId.CURSOR, expectedSrc: "/platform-icons/cursor.svg" },
       { id: AgentId.OPENCODE, expectedSrc: "/platform-icons/opencode.svg" },

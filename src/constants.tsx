@@ -44,7 +44,7 @@ export const PLATFORM_ICONS: Record<AgentId, React.FC<{ size?: number; className
     <img
       height={size}
       width={size}
-      src="/platform-icons/antigravity.png"
+      src="/platform-icons/antigravity.svg"
       alt="antigravity"
       className={className}
       style={{ display: 'block' }}

@@ -203,7 +203,7 @@ export const useSkillStore = create<SkillState>()(
         const logs = Array.isArray(state.logs) ? state.logs : [];
         return { ...state, skills: normalizedSkills, recycleBin, logs };
       },
-      onRehydrateStorage: (state) => {
+      onRehydrateStorage: () => {
         return (nextState, error) => {
           if (nextState && !error) nextState.cleanExpiredTrash();
         };

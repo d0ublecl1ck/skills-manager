@@ -4,7 +4,7 @@ import { revealItemInDir } from '@tauri-apps/plugin-opener';
 const safeSkillDirName = (name: string) => {
   const trimmed = name.trim();
   if (!trimmed) return 'skill';
-  return trimmed.replace(/[\\/]/g, '-').replaceAll('..', '').trim() || 'skill';
+  return trimmed.replace(/[\\/]/g, '-').replace(/\.\./g, '').trim() || 'skill';
 };
 
 export const resolveTildePath = async (path: string) => {

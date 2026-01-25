@@ -122,10 +122,7 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
 
 fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
     [
-        "~/.config/agents/skills", // Amp (XDG-style)
-        "~/.agents/skills",        // Amp (legacy)
-        "~/.codex/skills/custom",  // Codex custom
-        "~/.codex/skills",         // Codex
+        "~/.agents/skills", // npx skills add -g installs here
     ]
     .iter()
     .map(|root| expand_tilde(root).join(skill_dir_name))
@@ -203,9 +200,6 @@ pub(crate) fn reinstall_skill(
         return Err("repoUrl is empty".to_string());
     }
 
-    let url = normalize_install_url(&repo_url);
-    let lower = url.to_lowercase();
-
     let store_dir = manager_store_root(&storage_path)?;
     ensure_dir(&store_dir)?;
 
@@ -214,13 +208,35 @@ pub(crate) fn reinstall_skill(
         return Err("skillName is empty".to_string());
     }
 
+    let url = normalize_install_url(&repo_url);
+
+    let mut npx = Command::new("npx");
+    npx.arg("skills")
+        .arg("add")
+        .arg(&url)
+        .arg("--skill")
+        .arg(&safe_name)
+        .arg("-g")
+        .arg("-y");
+    run_cmd(npx, "npx skills add")?;
+
     let temp_dest = store_dir.join(format!(".tmp-reinstall-{}", generate_id()));
     let _ = remove_dir_if_exists(&temp_dest);
 
-    if lower.ends_with(".zip") || lower.contains(".zip?") {
-        install_zip(&url, &temp_dest)?;
-    } else {
-        install_git(&url, &temp_dest)?;
+    let mut copied = false;
+    for src in candidate_post_install_sources(&safe_name) {
+        if src.exists() && src.is_dir() {
+            copy_dir_all(&src, &temp_dest)?;
+            copied = true;
+            break;
+        }
+    }
+
+    if !copied {
+        return Err(format!(
+            "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
+            safe_name
+        ));
     }
 
     let final_dest = store_dir.join(&safe_name);
@@ -263,8 +279,8 @@ pub(crate) async fn install_skill_cli(
             .arg(&url)
             .arg("--skill")
             .arg(&desired_name)
-            .arg("-y")
-            .arg("-g");
+            .arg("-g")
+            .arg("-y");
         run_cmd(npx, "npx skills add")?;
 
         let store_root = manager_store_root(&storage_path)?;
@@ -281,7 +297,7 @@ pub(crate) async fn install_skill_cli(
 
         if !copied {
             return Err(format!(
-                "Installed skill directory not found under known locations (expected one of ~/.config/agents/skills/{0}, ~/.agents/skills/{0}, ~/.codex/skills/custom/{0}, ~/.codex/skills/{0})",
+                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
                 desired_name
             ));
         }
@@ -347,19 +363,17 @@ mod tests {
             normalize_install_url("https://github.com/foo/bar/"),
             "https://github.com/foo/bar"
         );
+        assert_eq!(
+            normalize_install_url("https://github.com/affaan-m/everything-claude-code/tree/main/skills/security-review/"),
+            "https://github.com/affaan-m/everything-claude-code/tree/main/skills/security-review"
+        );
         assert_eq!(normalize_install_url("http://example.com/x"), "http://example.com/x");
     }
 
     #[test]
     fn candidate_post_install_sources_prefers_agents_dir_first() {
         let sources = candidate_post_install_sources("demo-skill");
-        assert!(sources.len() >= 4);
-        assert!(sources[0]
-            .to_string_lossy()
-            .contains("/.config/agents/skills/demo-skill"));
-        assert!(sources[1].to_string_lossy().contains("/.agents/skills/demo-skill"));
-        assert!(sources[2]
-            .to_string_lossy()
-            .contains("/.codex/skills/custom/demo-skill"));
+        assert_eq!(sources.len(), 1);
+        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
     }
 }

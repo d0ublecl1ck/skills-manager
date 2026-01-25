@@ -1,8 +1,9 @@
 import React from 'react';
-import { Trash2, RotateCcw, AlertTriangle, Calendar } from 'lucide-react';
+import { Trash2, RotateCcw, AlertTriangle, Calendar, Clock } from 'lucide-react';
 
 import { useSkillStore } from '../stores/useSkillStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { addDaysByRetentionPolicy, formatLocalDateTimeToMinute, isValidDate } from '../lib/datetime';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,11 +82,26 @@ const RecycleBinPage: React.FC = () => {
                 <h3 className="text-[16px] font-bold text-slate-800 mb-2">{skill.name}</h3>
                 <div className="text-[12px] text-slate-400 mono mb-4">{skill.id}</div>
 
-                <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-6">
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-2">
                   <Calendar size={12} />
                   <span>
                     删除于:{' '}
                     {skill.deletedAt ? new Date(skill.deletedAt).toLocaleDateString() : '未知'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-slate-400 mb-6">
+                  <Clock size={12} />
+                  <span>
+                    将于:{' '}
+                    {(() => {
+                      if (!skill.deletedAt) return '未知';
+                      const deletedAt = new Date(skill.deletedAt);
+                      if (!isValidDate(deletedAt)) return '未知';
+                      const purgeAt = addDaysByRetentionPolicy(deletedAt, retentionDays);
+                      return formatLocalDateTimeToMinute(purgeAt);
+                    })()}{' '}
+                    彻底删除
                   </span>
                 </div>
               </div>
@@ -159,4 +175,3 @@ const RecycleBinPage: React.FC = () => {
 };
 
 export default RecycleBinPage;
-

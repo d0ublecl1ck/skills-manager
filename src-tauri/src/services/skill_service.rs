@@ -120,6 +120,16 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
     Ok(())
 }
 
+fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
+    [
+        "~/.agents/skills",        // Amp
+        "~/.codex/skills/custom",  // Codex custom
+    ]
+    .iter()
+    .map(|root| expand_tilde(root).join(skill_dir_name))
+    .collect()
+}
+
 #[tauri::command]
 pub(crate) fn bootstrap_skills_store(skills: Vec<Skill>, storage_path: String) -> Result<(), String> {
     let dir = manager_store_root(&storage_path)?;
@@ -180,6 +190,64 @@ pub(crate) fn install_skill(repo_url: String, storage_path: String) -> Result<Sk
 }
 
 #[tauri::command]
+pub(crate) async fn install_skill_cli(
+    repo_url: String,
+    skill_name: String,
+    storage_path: String,
+) -> Result<Skill, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if skill_name.trim().is_empty() {
+            return Err("skillName is empty".to_string());
+        }
+
+        let url = normalize_install_url(&repo_url);
+        let desired_name = safe_skill_dir_name(&skill_name);
+
+        let mut npx = Command::new("npx");
+        npx.arg("skills")
+            .arg("add")
+            .arg(&url)
+            .arg("--skill")
+            .arg(&desired_name)
+            .arg("-y")
+            .arg("-g");
+        run_cmd(npx, "npx skills add")?;
+
+        let store_root = manager_store_root(&storage_path)?;
+        let store_dest = store_root.join(&desired_name);
+
+        let mut copied = false;
+        for src in candidate_post_install_sources(&desired_name) {
+            if src.exists() && src.is_dir() {
+                copy_dir_all(&src, &store_dest)?;
+                copied = true;
+                break;
+            }
+        }
+
+        if !copied {
+            return Err(format!(
+                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
+                desired_name
+            ));
+        }
+
+        let now = now_iso();
+
+        Ok(Skill {
+            id: generate_id(),
+            name: desired_name,
+            source_url: Some(repo_url),
+            enabled_agents: vec![],
+            last_sync: Some(now.clone()),
+            last_update: Some(now),
+        })
+    })
+    .await
+    .map_err(|e| format!("install_skill_cli task join error: {e}"))?
+}
+
+#[tauri::command]
 pub(crate) fn uninstall_skill(
     skill_id: String,
     skill_name: String,
@@ -225,5 +293,12 @@ mod tests {
         );
         assert_eq!(normalize_install_url("http://example.com/x"), "http://example.com/x");
     }
-}
 
+    #[test]
+    fn candidate_post_install_sources_prefers_agents_dir_first() {
+        let sources = candidate_post_install_sources("demo-skill");
+        assert!(sources.len() >= 2);
+        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
+        assert!(sources[1].to_string_lossy().contains("/.codex/skills/custom/demo-skill"));
+    }
+}

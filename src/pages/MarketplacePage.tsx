@@ -1,47 +1,111 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ICONS } from '../constants';
-import { installSkill } from '../services/skillService';
+import { installSkillCli } from '../services/skillService';
+import { syncSkillDistribution } from '../services/syncService';
+import InstallSkillModal from '../components/InstallSkillModal';
+import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
+import { useToastStore } from '../stores/useToastStore';
 import { Globe, ExternalLink } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import type { AgentId } from '../types';
 
 const MarketplacePage: React.FC = () => {
   const [repoUrl, setRepoUrl] = useState('');
   const [isInstalling, setIsInstalling] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [customName, setCustomName] = useState('');
+  const [selectedAgentIds, setSelectedAgentIds] = useState<AgentId[]>([]);
+
+  const agents = useAgentStore((s) => s.agents);
+  const supportedAgents = useMemo(() => agents, [agents]);
+  const enabledAgents = useMemo(() => agents.filter((a) => a.enabled), [agents]);
   const addSkill = useSkillStore((state) => state.addSkill);
   const addLog = useSkillStore((state) => state.addLog);
+  const addToast = useToastStore((state) => state.addToast);
 
-  const handleInstall = async () => {
-    if (!repoUrl) return;
+  const validateUrl = (url: string) => {
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) return { valid: false, message: '请输入安装地址' };
+
+    const isGithub = trimmedUrl.includes('github.com/');
+    const isUrl = trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://');
+
+    if (!isUrl && !isGithub) {
+      return { valid: false, message: '请输入有效的 GitHub 地址或网址' };
+    }
+
+    return { valid: true };
+  };
+
+  const handleInitiateInstall = () => {
+    const validation = validateUrl(repoUrl);
+    if (!validation.valid) {
+      addToast(validation.message || '输入无效', 'error');
+      return;
+    }
+
+    const parts = repoUrl.split('/').filter(Boolean);
+    const defaultName = parts[parts.length - 1] || 'new-skill';
+    setCustomName(defaultName.replace('.git', '').replace('.zip', '').trim());
+    setSelectedAgentIds(enabledAgents.map((a) => a.id));
+    setShowConfirmModal(true);
+  };
+
+  const handleCompleteInstall = async () => {
+    const skillName = customName.trim();
+    if (!skillName) {
+      addToast('请输入技能名称', 'error');
+      return;
+    }
+
+    setShowConfirmModal(false);
     setIsInstalling(true);
-    const startedAt = Date.now();
-    
-    try {
-      const newSkill = await installSkill(repoUrl);
-      const elapsed = Date.now() - startedAt;
-      const remaining = Math.max(0, 2000 - elapsed);
 
-      setTimeout(() => {
-        addSkill(newSkill);
-        addLog({
-          action: 'install',
-          skillId: newSkill.name,
-          status: 'success',
-          message: `从 ${repoUrl} 自动安装成功`
-        });
-        setIsInstalling(false);
-        setRepoUrl('');
-      }, remaining);
+    try {
+      const newSkill = await installSkillCli(repoUrl.trim(), skillName);
+      const withAgents = { ...newSkill, enabledAgents: selectedAgentIds };
+      addSkill(withAgents);
+
+      const agentsForSync = agents.map((a) =>
+        selectedAgentIds.includes(a.id) ? { ...a, enabled: true } : a
+      );
+      await syncSkillDistribution(withAgents, agentsForSync);
+      addLog({
+        action: 'install',
+        skillId: withAgents.name,
+        status: 'success',
+        message: `从 ${repoUrl} 安装成功`
+      });
+      addToast(`技能 "${withAgents.name}" 安装成功`, 'success');
+      setIsInstalling(false);
+      setRepoUrl('');
+      setCustomName('');
+      setSelectedAgentIds([]);
     } catch (e) {
       console.error(e);
       addLog({
         action: 'install',
-        skillId: '未知技能',
+        skillId: skillName,
         status: 'error',
         message: `安装失败: ${e instanceof Error ? e.message : '未知错误'}`
       });
+      addToast('安装失败，请检查地址是否可访问', 'error');
       setIsInstalling(false);
     }
+  };
+
+  const toggleAgent = (id: AgentId) => {
+    setSelectedAgentIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const toggleAllAgents = () => {
+    setSelectedAgentIds((prev) => {
+      if (supportedAgents.length === 0) return prev;
+      const allSelected = supportedAgents.every((a) => prev.includes(a.id));
+      return allSelected ? [] : supportedAgents.map((a) => a.id);
+    });
   };
 
   const resourceSites = [
@@ -80,18 +144,18 @@ const MarketplacePage: React.FC = () => {
               className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] text-slate-800 placeholder-slate-400"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleInstall()}
+              onKeyDown={(e) => e.key === 'Enter' && handleInitiateInstall()}
               disabled={isInstalling}
               aria-label="技能仓库地址"
               name="repoUrl"
               autoComplete="off"
               inputMode="url"
-              spellCheck={false}
+             spellCheck={false}
              />
           </div>
           <button 
-            onClick={handleInstall}
-            disabled={isInstalling || !repoUrl}
+            onClick={handleInitiateInstall}
+            disabled={isInstalling}
             className={`
               px-6 py-2 rounded-md text-[13px] font-bold transition-all
               ${isInstalling 
@@ -99,7 +163,12 @@ const MarketplacePage: React.FC = () => {
                 : 'bg-black text-white hover:bg-slate-800'}
             `}
           >
-            {isInstalling ? '正在安装...' : '安装'}
+            {isInstalling ? (
+              <span className="flex items-center gap-2">
+                <Loader2 size={14} className="animate-spin" />
+                安装中
+              </span>
+            ) : '安装'}
           </button>
         </div>
         {isInstalling && (
@@ -108,6 +177,19 @@ const MarketplacePage: React.FC = () => {
           </p>
         )}
       </section>
+
+      <InstallSkillModal
+        open={showConfirmModal}
+        repoUrl={repoUrl}
+        skillName={customName}
+        agents={supportedAgents}
+        selectedAgentIds={selectedAgentIds}
+        onChangeSkillName={setCustomName}
+        onToggleAgent={toggleAgent}
+        onToggleAll={toggleAllAgents}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={handleCompleteInstall}
+      />
 
       <div className="h-px bg-[#eaeaea]"></div>
 

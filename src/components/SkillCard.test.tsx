@@ -46,6 +46,7 @@ describe('SkillCard', () => {
     };
 
     render(<SkillCard skill={skill} />);
+    expect(screen.getByText('来自 GitHub')).toBeTruthy();
     const user = userEvent.setup();
 
     await user.click(screen.getByTitle('检查并执行更新'));
@@ -67,11 +68,28 @@ describe('SkillCard', () => {
     };
 
     render(<SkillCard skill={skill} />);
+    expect(screen.queryByText(/^来自 /)).toBeNull();
     const user = userEvent.setup();
 
     await user.click(screen.getByTitle('绑定来源后开启自动更新'));
 
     expect(screen.getByText('绑定来源引导')).toBeTruthy();
     expect(reInstallSkill).not.toHaveBeenCalled();
+  });
+
+  it('根据 sourceUrl 域名显示来源名称', () => {
+    useSkillStore.setState({ reInstallSkill: vi.fn(async () => {}) });
+
+    const vercelSkill: Skill = {
+      id: 'vercel-1',
+      name: 'Vercel Skill',
+      enabledAgents: [],
+      sourceUrl: 'https://vercel.com/xxskill',
+      installSource: 'platform',
+      isAdopted: true,
+    };
+
+    render(<SkillCard skill={vercelSkill} />);
+    expect(screen.getByText('来自 Vercel')).toBeTruthy();
   });
 });

@@ -5,22 +5,32 @@ import { useAgentStore } from '../stores/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
-import { ArrowUpDown, RefreshCw, Search } from 'lucide-react';
+import { ArrowUpDown, CheckCheck, RefreshCw, Search } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
+import { useToastStore } from '../stores/useToastStore';
 
 type SortOption = 'sync_desc' | 'sync_asc' | 'name_asc' | 'name_desc';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
+  const enableAllSkillsForAgent = useSkillStore((state) => state.enableAllSkillsForAgent);
   const agents = useAgentStore(state => state.agents);
   const setSyncModalOpen = useUIStore((state) => state.setSyncModalOpen);
   const setDevModalOpen = useUIStore((state) => state.setDevModalOpen);
+  const addToast = useToastStore((state) => state.addToast);
   
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('sync_desc');
 
   const enabledAgents = useMemo(() => agents.filter(a => a.enabled), [agents]);
+
+  const handleEnableAllForCurrent = () => {
+    if (selectedAgent === 'all') return;
+    const agentName = agents.find((a) => a.id === selectedAgent)?.name ?? '';
+    enableAllSkillsForAgent(selectedAgent as AgentId);
+    addToast(`已为 ${agentName} 开启库中所有已绑定的技能`, 'success');
+  };
 
   const filteredAndSortedSkills = useMemo(() => {
     let result = skills.filter((skill) => {
@@ -112,25 +122,39 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          <div className="relative min-w-[160px] sm:w-[180px]">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-              <ArrowUpDown size={16} />
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortOption)}
-              aria-label="排序"
-              className="w-full pl-11 pr-10 py-3 bg-white border border-[#eaeaea] hover:border-black focus:border-black focus:ring-0 rounded-lg text-[13px] font-semibold appearance-none cursor-pointer transition-all"
-            >
-              <option value="sync_desc">最近同步</option>
-              <option value="sync_asc">最早同步</option>
-              <option value="name_asc">名称 (A-Z)</option>
-              <option value="name_desc">名称 (Z-A)</option>
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-300">
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M1 1L5 5L9 1" />
-              </svg>
+          <div className="flex gap-2">
+            {selectedAgent !== 'all' && (
+              <button
+                type="button"
+                onClick={handleEnableAllForCurrent}
+                className="flex items-center gap-2 px-4 py-3 bg-white border border-[#eaeaea] hover:border-black rounded-lg text-[13px] font-semibold transition-all group"
+                title={`为 ${agents.find(a => a.id === selectedAgent)?.name} 开启库中所有已绑定的技能`}
+              >
+                <CheckCheck size={16} className="opacity-40 group-hover:opacity-100" />
+                <span className="hidden md:inline">一键开启全部</span>
+              </button>
+            )}
+
+            <div className="relative min-w-[160px] sm:w-[180px]">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                <ArrowUpDown size={16} />
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                aria-label="排序"
+                className="w-full pl-11 pr-10 py-3 bg-white border border-[#eaeaea] hover:border-black focus:border-black focus:ring-0 rounded-lg text-[13px] font-semibold appearance-none cursor-pointer transition-all"
+              >
+                <option value="sync_desc">最近同步</option>
+                <option value="sync_asc">最早同步</option>
+                <option value="name_asc">名称 (A-Z)</option>
+                <option value="name_desc">名称 (Z-A)</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-300">
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M1 1L5 5L9 1" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>

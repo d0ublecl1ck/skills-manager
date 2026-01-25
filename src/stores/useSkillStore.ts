@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Skill, AgentId, OperationLog } from '../types';
 import { reinstallSkill, uninstallSkill } from '../services/skillService';
-import { syncSkillDistribution } from '../services/syncService';
+import { syncAllSkillsDistribution, syncSkillDistribution } from '../services/syncService';
 import { useAgentStore } from './useAgentStore';
 import { useSettingsStore } from './useSettingsStore';
 
@@ -22,6 +22,7 @@ interface SkillState {
   updateSkill: (skillId: string, updates: Partial<Skill>) => void;
   toggleAgent: (skillId: string, agentId: AgentId) => void;
   setSkillAgents: (skillId: string, agentIds: AgentId[]) => void;
+  enableAllSkillsForAgent: (agentId: AgentId) => void;
   addLog: (log: Omit<OperationLog, 'id' | 'timestamp'>) => void;
   adoptSkill: (skillId: string, updates: Pick<Skill, 'sourceUrl' | 'enabledAgents'> & Partial<Skill>) => void;
   reInstallSkill: (skillId: string) => Promise<void>;
@@ -187,6 +188,20 @@ export const useSkillStore = create<SkillState>()(
           void syncSkillDistribution(updated, useAgentStore.getState().agents).catch(console.error);
         }
 
+        return { skills };
+      }),
+      enableAllSkillsForAgent: (agentId) => set((state) => {
+        let changed = false;
+        const skills = state.skills.map((s) => {
+          if (!s.isAdopted) return s;
+          if (s.enabledAgents.includes(agentId)) return s;
+          changed = true;
+          return { ...s, enabledAgents: [...s.enabledAgents, agentId] };
+        });
+
+        if (!changed) return {};
+
+        void syncAllSkillsDistribution(skills, useAgentStore.getState().agents).catch(console.error);
         return { skills };
       }),
       addLog: (log) => set((state) => ({

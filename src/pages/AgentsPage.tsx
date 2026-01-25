@@ -3,13 +3,17 @@ import React from 'react';
 import { useAgentStore } from '../stores/useAgentStore';
 import { ICONS, PLATFORM_ICONS } from '../constants';
 import { useSkillStore } from '../stores/useSkillStore';
+import { useToastStore } from '../stores/useToastStore';
 import { syncAllSkillsDistribution } from '../services/syncService';
 import { AgentId } from '../types';
+import { CheckCheck } from 'lucide-react';
 
 const AgentsPage: React.FC = () => {
   const agents = useAgentStore(state => state.agents);
   const updateAgentPath = useAgentStore(state => state.updateAgentPath);
   const toggleAgentEnabled = useAgentStore(state => state.toggleAgentEnabled);
+  const enableAllSkillsForAgent = useSkillStore((state) => state.enableAllSkillsForAgent);
+  const addToast = useToastStore((state) => state.addToast);
 
   const syncAll = () => {
     const updatedAgents = useAgentStore.getState().agents;
@@ -20,6 +24,11 @@ const AgentsPage: React.FC = () => {
   const handleToggleEnabled = (agentId: AgentId) => {
     toggleAgentEnabled(agentId);
     syncAll();
+  };
+
+  const handleEnableAll = (agentId: AgentId, agentName: string) => {
+    enableAllSkillsForAgent(agentId);
+    addToast(`已为 ${agentName} 开启库中所有已绑定的技能`, 'success');
   };
 
   return (
@@ -69,17 +78,32 @@ const AgentsPage: React.FC = () => {
 
               </div>
 
-              <button 
-                onClick={() => handleToggleEnabled(agent.id)}
-                className={`
-                  px-4 py-1.5 rounded-md text-[12px] font-bold transition-all border
-                  ${agent.enabled 
-                    ? 'bg-white text-slate-500 border-[#eaeaea] hover:text-black hover:border-black' 
-                    : 'bg-black text-white border-black'}
-                `}
-              >
-                {agent.enabled ? '禁用' : '启用'}
-              </button>
+              <div className="flex items-center gap-2">
+                {agent.enabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleEnableAll(agent.id, agent.name)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-bold text-slate-500 hover:text-black hover:bg-slate-50 transition-all border border-transparent hover:border-[#eaeaea]"
+                    title="将库中所有已绑定的技能分发至此平台"
+                    aria-label={`批量开启 ${agent.name} 的所有技能`}
+                  >
+                    <CheckCheck size={14} />
+                    批量开启
+                  </button>
+                )}
+                <button 
+                  type="button"
+                  onClick={() => handleToggleEnabled(agent.id)}
+                  className={`
+                    px-4 py-1.5 rounded-md text-[12px] font-bold transition-all border
+                    ${agent.enabled 
+                      ? 'bg-white text-slate-500 border-[#eaeaea] hover:text-black hover:border-black' 
+                      : 'bg-black text-white border-black'}
+                  `}
+                >
+                  {agent.enabled ? '禁用' : '启用'}
+                </button>
+              </div>
             </div>
           );
         })}

@@ -1,17 +1,20 @@
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
-const needsLocalStoragePolyfill =
-  typeof window === 'undefined' ||
-  !('localStorage' in window) ||
-  typeof window.localStorage?.getItem !== 'function' ||
-  typeof window.localStorage?.setItem !== 'function' ||
-  typeof window.localStorage?.removeItem !== 'function' ||
-  typeof window.localStorage?.clear !== 'function';
+function needsStoragePolyfill(storageKey: 'localStorage' | 'sessionStorage') {
+  return (
+    typeof window === 'undefined' ||
+    !(storageKey in window) ||
+    typeof window[storageKey]?.getItem !== 'function' ||
+    typeof window[storageKey]?.setItem !== 'function' ||
+    typeof window[storageKey]?.removeItem !== 'function' ||
+    typeof window[storageKey]?.clear !== 'function'
+  );
+}
 
-if (needsLocalStoragePolyfill && typeof window !== 'undefined') {
+function createMemoryStorage(): Storage {
   let data = new Map<string, string>();
 
-  const localStoragePolyfill: Storage = {
+  return {
     get length() {
       return data.size;
     },
@@ -31,13 +34,14 @@ if (needsLocalStoragePolyfill && typeof window !== 'undefined') {
       data.set(key, String(value));
     },
   };
+}
 
-  Object.defineProperty(window, 'localStorage', {
-    value: localStoragePolyfill,
-    configurable: true,
-  });
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: localStoragePolyfill,
-    configurable: true,
-  });
+function defineStorage(storageKey: 'localStorage' | 'sessionStorage', storage: Storage) {
+  Object.defineProperty(window, storageKey, { value: storage, configurable: true });
+  Object.defineProperty(globalThis, storageKey, { value: storage, configurable: true });
+}
+
+if (typeof window !== 'undefined') {
+  if (needsStoragePolyfill('localStorage')) defineStorage('localStorage', createMemoryStorage());
+  if (needsStoragePolyfill('sessionStorage')) defineStorage('sessionStorage', createMemoryStorage());
 }

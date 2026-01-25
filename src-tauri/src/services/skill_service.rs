@@ -4,8 +4,8 @@ use std::process::Command;
 
 use crate::models::{AgentInfo, Skill};
 use crate::utils::{
-    copy_dir_all, ensure_dir, expand_tilde, generate_id, manager_store_root, now_iso,
-    remove_dir_if_exists, safe_skill_dir_name, skill_dest_for_agent, unique_skill_dir_name,
+    agent_roots, copy_dir_all, ensure_dir, expand_tilde, generate_id, manager_store_root, now_iso,
+    remove_dir_if_exists, safe_skill_dir_name, unique_skill_dir_name,
 };
 
 fn normalize_install_url(input: &str) -> String {
@@ -262,8 +262,10 @@ pub(crate) fn uninstall_skill(
     let _ = remove_dir_if_exists(&src);
 
     for agent in agents {
-        let dst = skill_dest_for_agent(&agent, &skill_name);
-        let _ = remove_dir_if_exists(&dst);
+        for root in agent_roots(&agent) {
+            let dst = root.join(safe_skill_dir_name(&skill_name));
+            let _ = remove_dir_if_exists(&dst);
+        }
     }
 
     Ok(())

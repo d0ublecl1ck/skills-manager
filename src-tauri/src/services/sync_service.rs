@@ -6,8 +6,8 @@ use tauri::Emitter;
 
 use crate::models::{AgentInfo, Skill, SyncAllToManagerProgressLog};
 use crate::utils::{
-    copy_dir_all, ensure_dir, expand_tilde, manager_store_root, now_iso, remove_dir_if_exists,
-    safe_skill_dir_name, skill_dest_for_agent,
+    agent_roots, copy_dir_all, ensure_dir, manager_store_root, now_iso, remove_dir_if_exists,
+    safe_skill_dir_name,
 };
 
 fn dir_contains_skill_md(dir: &Path) -> bool {
@@ -164,18 +164,23 @@ fn sync_one_skill(
         if !agent.enabled {
             continue;
         }
-        let dst = skill_dest_for_agent(agent, skill_name);
         if enabled.iter().any(|a| a == &agent.id) {
-            ensure_dir(&expand_tilde(&agent.current_path))?;
-            copy_dir_all(&src, &dst)?;
-            if agent.id == "codex" {
-                if let Some(skill_md) = find_skill_md_path(&dst) {
-                    ensure_skill_md_has_yaml_frontmatter(&skill_md, skill_name)?;
+            for root in agent_roots(agent) {
+                ensure_dir(&root)?;
+                let dst = root.join(safe_skill_dir_name(skill_name));
+                copy_dir_all(&src, &dst)?;
+                if agent.id == "codex" {
+                    if let Some(skill_md) = find_skill_md_path(&dst) {
+                        ensure_skill_md_has_yaml_frontmatter(&skill_md, skill_name)?;
+                    }
                 }
             }
             continue;
         } else {
-            let _ = remove_dir_if_exists(&dst);
+            for root in agent_roots(agent) {
+                let dst = root.join(safe_skill_dir_name(skill_name));
+                let _ = remove_dir_if_exists(&dst);
+            }
         }
     }
 
@@ -262,8 +267,10 @@ fn sync_all_to_manager_store_inner(
                 progress: start_progress,
             });
 
-            let agent_root = expand_tilde(&agent.current_path);
-            if agent_root.exists() && agent_root.is_dir() {
+            for agent_root in agent_roots(agent) {
+                if !agent_root.exists() || !agent_root.is_dir() {
+                    continue;
+                }
                 for skill_root in find_skill_roots(&agent_root) {
                     let name = skill_root
                         .file_name()
@@ -381,6 +388,7 @@ mod tests {
             current_path: root.to_string_lossy().to_string(),
             enabled,
             icon: "test".to_string(),
+            suggested_paths: vec![],
         }
     }
 
@@ -506,5 +514,44 @@ mod tests {
 
         let _ = fs::remove_dir_all(&tmp);
     }
-}
 
+    #[test]
+    fn sync_one_skill_copies_to_all_agent_roots() {
+        let tmp = temp_test_dir("sync-one-skill-all-roots");
+        let store_root = tmp.join("store");
+        let current_root = tmp.join("current");
+        let default_root = tmp.join("default");
+        let extra_root = tmp.join("extra");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&current_root).unwrap();
+        ensure_dir(&default_root).unwrap();
+        ensure_dir(&extra_root).unwrap();
+
+        let skill_name = "agent-browser";
+        let store_skill_dir = store_root.join(safe_skill_dir_name(skill_name));
+        write_file(&store_skill_dir.join("SKILL.md"), "# agent-browser\n");
+
+        let agent = AgentInfo {
+            id: "x".to_string(),
+            name: "X".to_string(),
+            default_path: default_root.to_string_lossy().to_string(),
+            current_path: current_root.to_string_lossy().to_string(),
+            enabled: true,
+            icon: "test".to_string(),
+            suggested_paths: vec![extra_root.to_string_lossy().to_string()],
+        };
+
+        sync_one_skill(&store_root, skill_name, &["x".to_string()], &[agent]).unwrap();
+
+        for root in [current_root, default_root, extra_root] {
+            assert!(
+                root.join(safe_skill_dir_name(skill_name)).join("SKILL.md").exists(),
+                "skill should be copied into {}",
+                root.display()
+            );
+        }
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+}

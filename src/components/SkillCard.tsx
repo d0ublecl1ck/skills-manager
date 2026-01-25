@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { ExternalLink, Link2, RefreshCcw, Trash2 } from 'lucide-react';
 
 import type { AgentId, Skill } from '../types';
 import { PLATFORM_ICONS } from '../constants';
+import { getSkillDescriptionFromMd } from '../services/skillMdService';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useToastStore } from '../stores/useToastStore';
@@ -23,6 +24,8 @@ import {
 interface SkillCardProps {
   skill: Skill;
 }
+
+const DESCRIPTION_CACHE = new Map<string, string>();
 
 const getSkillSourceLabel = (sourceUrl?: string) => {
   if (!sourceUrl) return 'Unknown';
@@ -44,6 +47,9 @@ const getSkillSourceLabel = (sourceUrl?: string) => {
 const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAdoptModal, setShowAdoptModal] = useState(false);
+  const [descriptionFromMd, setDescriptionFromMd] = useState<string | null>(() => {
+    return DESCRIPTION_CACHE.get(skill.name) ?? null;
+  });
 
   const enabledAgentsInSystem = useAgentStore(
     useShallow((state) => state.agents.filter((a) => a.enabled)),
@@ -60,6 +66,28 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
 
   const sourceLabel = useMemo(() => getSkillSourceLabel(skill.sourceUrl), [skill.sourceUrl]);
   const showSourceLabel = isAdopted && Boolean(skill.sourceUrl);
+
+  useEffect(() => {
+    if (skill.description) return;
+    if (DESCRIPTION_CACHE.has(skill.name)) {
+      setDescriptionFromMd(DESCRIPTION_CACHE.get(skill.name) ?? null);
+      return;
+    }
+
+    let cancelled = false;
+    void getSkillDescriptionFromMd(skill.name)
+      .then((desc) => {
+        if (cancelled) return;
+        if (!desc) return;
+        DESCRIPTION_CACHE.set(skill.name, desc);
+        setDescriptionFromMd(desc);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [skill.name, skill.description]);
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
     if (!isAdopted) {
@@ -158,7 +186,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
       </div>
 
       <p className="text-[13px] text-[#666] leading-relaxed mb-6 flex-1 line-clamp-2">
-        {skill.description || '暂无描述'}
+        {skill.description || descriptionFromMd || '暂无描述'}
       </p>
 
       <div className="flex flex-wrap gap-2.5 mb-8">

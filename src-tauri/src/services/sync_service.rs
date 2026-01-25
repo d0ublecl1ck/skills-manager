@@ -57,6 +57,94 @@ fn yaml_single_quote(value: &str) -> String {
     format!("'{}'", value.replace('\'', "''"))
 }
 
+fn extract_description_from_skill_md(content: &str) -> Option<String> {
+    let trimmed = content.trim_start_matches('\u{feff}');
+    if !(trimmed.starts_with("---\n") || trimmed.starts_with("---\r\n")) {
+        return None;
+    }
+
+    // Parse YAML frontmatter lines: between first and second "---" delimiter lines.
+    let mut frontmatter_lines: Vec<&str> = vec![];
+    let mut lines = trimmed.lines();
+    let first = lines.next()?;
+    if first.trim_end_matches('\r') != "---" {
+        return None;
+    }
+
+    for line in lines {
+        let l = line.trim_end_matches('\r');
+        if l == "---" {
+            break;
+        }
+        frontmatter_lines.push(l);
+    }
+
+    // Find `description:` in frontmatter.
+    let mut idx = 0usize;
+    while idx < frontmatter_lines.len() {
+        let raw = frontmatter_lines[idx];
+        let t = raw.trim_start();
+        if !t.to_ascii_lowercase().starts_with("description") {
+            idx += 1;
+            continue;
+        }
+
+        let mut parts = t.splitn(2, ':');
+        let key = parts.next().unwrap_or("").trim().to_ascii_lowercase();
+        if key != "description" {
+            idx += 1;
+            continue;
+        }
+        let rest = parts.next().unwrap_or("").trim();
+
+        // Handle YAML block scalars: `description: |` / `description: >` (optionally with chomping indicators).
+        if rest.starts_with('|') || rest.starts_with('>') {
+            let mut out: Vec<String> = vec![];
+            let mut block_indent: Option<usize> = None;
+
+            for next in frontmatter_lines.iter().skip(idx + 1) {
+                if next.trim().is_empty() {
+                    out.push(String::new());
+                    continue;
+                }
+
+                let indent = next.chars().take_while(|c| *c == ' ' || *c == '\t').count();
+                if block_indent.is_none() {
+                    block_indent = Some(indent);
+                }
+
+                let want = block_indent.unwrap_or(0);
+                if indent < want {
+                    break;
+                }
+
+                out.push(next.chars().skip(want).collect());
+            }
+
+            let joined = out.join("\n").trim().to_string();
+            return if joined.is_empty() { None } else { Some(joined) };
+        }
+
+        // Single-line scalars (quoted or plain).
+        let mut value = rest.to_string();
+        let is_single_quoted = value.starts_with('\'') && value.ends_with('\'');
+        let is_double_quoted = value.starts_with('"') && value.ends_with('"');
+        if is_single_quoted || is_double_quoted {
+            if value.len() >= 2 {
+                value = value[1..value.len() - 1].to_string();
+            }
+            if is_single_quoted {
+                value = value.replace("''", "'");
+            }
+        }
+
+        let v = value.trim().to_string();
+        return if v.is_empty() { None } else { Some(v) };
+    }
+
+    None
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct SkillMdQuality {
     has_yaml_frontmatter: bool,
@@ -216,6 +304,22 @@ pub(crate) fn sync_all_skills_distribution(
 #[tauri::command]
 pub(crate) fn sync_all_to_manager_store(agents: Vec<AgentInfo>, storage_path: String) -> Result<Vec<Skill>, String> {
     sync_all_to_manager_store_inner(None, agents, storage_path)
+}
+
+#[tauri::command]
+pub(crate) fn get_skill_description(
+    skill_name: String,
+    storage_path: String,
+) -> Result<Option<String>, String> {
+    let store_root = manager_store_root(&storage_path)?;
+    let skill_dir = store_root.join(safe_skill_dir_name(&skill_name));
+    let Some(path) = find_skill_md_path(&skill_dir) else {
+        return Ok(None);
+    };
+
+    let content =
+        fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
+    Ok(extract_description_from_skill_md(&content))
 }
 
 #[tauri::command]
@@ -549,5 +653,23 @@ mod tests {
         }
 
         let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn extract_description_from_yaml_frontmatter_single_line() {
+        let md = "---\nname: demo\ndescription: hello world\n---\n\n# demo\n";
+        assert_eq!(
+            extract_description_from_skill_md(md),
+            Some("hello world".to_string())
+        );
+    }
+
+    #[test]
+    fn extract_description_from_yaml_frontmatter_block_scalar() {
+        let md = "---\nname: demo\ndescription: |\n  line1\n  line2\n---\n\n# demo\n";
+        assert_eq!(
+            extract_description_from_skill_md(md),
+            Some("line1\nline2".to_string())
+        );
     }
 }

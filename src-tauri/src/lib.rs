@@ -2,7 +2,9 @@ mod models;
 mod services;
 mod utils;
 
-use services::skill_service::{bootstrap_skills_store, install_skill, reset_store, uninstall_skill};
+use services::skill_service::{
+    bootstrap_skills_store, install_skill, install_skill_cli, reset_store, uninstall_skill,
+};
 use services::sync_service::{
     sync_all_skills_distribution, sync_all_to_manager_store, sync_all_to_manager_store_with_progress,
     sync_skill_distribution,
@@ -15,6 +17,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             bootstrap_skills_store,
             install_skill,
+            install_skill_cli,
             sync_skill_distribution,
             sync_all_skills_distribution,
             sync_all_to_manager_store,

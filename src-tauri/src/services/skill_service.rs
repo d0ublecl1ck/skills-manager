@@ -180,6 +180,52 @@ pub(crate) fn install_skill(repo_url: String, storage_path: String) -> Result<Sk
 }
 
 #[tauri::command]
+pub(crate) fn install_skill_cli(
+    repo_url: String,
+    skill_name: String,
+    storage_path: String,
+) -> Result<Skill, String> {
+    if skill_name.trim().is_empty() {
+        return Err("skillName is empty".to_string());
+    }
+
+    let url = normalize_install_url(&repo_url);
+    let desired_name = safe_skill_dir_name(&skill_name);
+
+    let mut npx = Command::new("npx");
+    npx.arg("skills")
+        .arg("add")
+        .arg(&url)
+        .arg("--skill")
+        .arg(&desired_name)
+        .arg("-y")
+        .arg("-g");
+    run_cmd(npx, "npx skills add")?;
+
+    let store_root = manager_store_root(&storage_path)?;
+    let store_dest = store_root.join(&desired_name);
+
+    if !store_dest.exists() {
+        let global_root = expand_tilde("~/.codex/skills/custom");
+        let global_src = global_root.join(&desired_name);
+        if global_src.exists() && global_src.is_dir() {
+            copy_dir_all(&global_src, &store_dest)?;
+        }
+    }
+
+    let now = now_iso();
+
+    Ok(Skill {
+        id: generate_id(),
+        name: desired_name,
+        source_url: Some(repo_url),
+        enabled_agents: vec![],
+        last_sync: Some(now.clone()),
+        last_update: Some(now),
+    })
+}
+
+#[tauri::command]
 pub(crate) fn uninstall_skill(
     skill_id: String,
     skill_name: String,
@@ -226,4 +272,3 @@ mod tests {
         assert_eq!(normalize_install_url("http://example.com/x"), "http://example.com/x");
     }
 }
-

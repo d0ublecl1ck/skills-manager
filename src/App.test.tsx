@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -41,7 +41,7 @@ describe("App", () => {
 
     vi.mocked(invoke).mockImplementation((cmd) => {
       if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
-      if (cmd === "install_skill") return Promise.resolve(installedSkill as unknown as never);
+      if (cmd === "install_skill_cli") return Promise.resolve(installedSkill as unknown as never);
       return Promise.resolve(undefined as never);
     });
 
@@ -62,15 +62,17 @@ describe("App", () => {
     const installButton = screen.getByRole("button", { name: "安装" });
     await user.click(installButton);
 
-    expect(vi.mocked(invoke)).toHaveBeenCalledWith("install_skill", {
-      repoUrl: "github.com/foo/bar",
-      storagePath: "~/.skillsm",
-    });
-    expect(screen.getByRole("button", { name: "正在安装..." })).toBeInTheDocument();
+    expect(await screen.findByText("确认技能信息")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "确认安装" }));
 
-    expect(
-      await screen.findByRole("button", { name: "安装" }, { timeout: 4000 }),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(vi.mocked(invoke)).toHaveBeenCalledWith("install_skill_cli", {
+        repoUrl: "github.com/foo/bar",
+        skillName: "bar",
+        storagePath: "~/.skillsm",
+      });
+    });
+    expect(screen.getByRole("button", { name: "安装" })).toBeInTheDocument();
     expect(repoInput).toHaveValue("");
   });
 

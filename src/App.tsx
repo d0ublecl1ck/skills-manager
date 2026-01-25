@@ -7,6 +7,7 @@ import AgentsPage from './pages/AgentsPage';
 import SettingsPage from './pages/SettingsPage';
 import RecycleBinPage from './pages/RecycleBinPage';
 import OnboardingModal from './components/OnboardingModal';
+import ToastHost from './components/ToastHost';
 import { bootstrapSkillsStore } from './services/skillService';
 import { useSkillStore } from './stores/useSkillStore';
 
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         </Routes>
       </Layout>
       <OnboardingModal />
+      <ToastHost />
     </Router>
   );
 };

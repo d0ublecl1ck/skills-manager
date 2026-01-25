@@ -1,44 +1,47 @@
-import "@testing-library/jest-dom/vitest";
+import '@testing-library/jest-dom/vitest';
 
-class MemoryStorage implements Storage {
-  private store = new Map<string, string>();
-
-  get length() {
-    return this.store.size;
-  }
-
-  clear() {
-    this.store.clear();
-  }
-
-  getItem(key: string) {
-    return this.store.has(key) ? this.store.get(key)! : null;
-  }
-
-  key(index: number) {
-    const keys = [...this.store.keys()];
-    return keys[index] ?? null;
-  }
-
-  removeItem(key: string) {
-    this.store.delete(key);
-  }
-
-  setItem(key: string, value: string) {
-    this.store.set(key, String(value));
-  }
+function needsStoragePolyfill(storageKey: 'localStorage' | 'sessionStorage') {
+  return (
+    typeof window === 'undefined' ||
+    !(storageKey in window) ||
+    typeof window[storageKey]?.getItem !== 'function' ||
+    typeof window[storageKey]?.setItem !== 'function' ||
+    typeof window[storageKey]?.removeItem !== 'function' ||
+    typeof window[storageKey]?.clear !== 'function'
+  );
 }
 
-if (typeof window.localStorage?.setItem !== "function") {
-  Object.defineProperty(window, "localStorage", {
-    value: new MemoryStorage(),
-    configurable: true,
-  });
+function createMemoryStorage(): Storage {
+  let data = new Map<string, string>();
+
+  return {
+    get length() {
+      return data.size;
+    },
+    clear() {
+      data = new Map();
+    },
+    getItem(key: string) {
+      return data.has(key) ? (data.get(key) ?? null) : null;
+    },
+    key(index: number) {
+      return Array.from(data.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      data.delete(key);
+    },
+    setItem(key: string, value: string) {
+      data.set(key, String(value));
+    },
+  };
 }
 
-if (typeof window.sessionStorage?.setItem !== "function") {
-  Object.defineProperty(window, "sessionStorage", {
-    value: new MemoryStorage(),
-    configurable: true,
-  });
+function defineStorage(storageKey: 'localStorage' | 'sessionStorage', storage: Storage) {
+  Object.defineProperty(window, storageKey, { value: storage, configurable: true });
+  Object.defineProperty(globalThis, storageKey, { value: storage, configurable: true });
+}
+
+if (typeof window !== 'undefined') {
+  if (needsStoragePolyfill('localStorage')) defineStorage('localStorage', createMemoryStorage());
+  if (needsStoragePolyfill('sessionStorage')) defineStorage('sessionStorage', createMemoryStorage());
 }

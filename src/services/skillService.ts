@@ -10,6 +10,10 @@ export const installSkill = async (repoUrl: string): Promise<Skill> => {
   return await invoke<Skill>('install_skill', { repoUrl, storagePath: storagePath() });
 };
 
+export const installSkillCli = async (repoUrl: string, skillName: string): Promise<Skill> => {
+  return await invoke<Skill>('install_skill_cli', { repoUrl, skillName, storagePath: storagePath() });
+};
+
 export const uninstallSkill = async (skill: Skill, agents: AgentInfo[]) => {
   await invoke('uninstall_skill', {
     skillId: skill.id,

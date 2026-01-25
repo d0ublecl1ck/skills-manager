@@ -1,12 +1,14 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useAgentStore } from '../stores/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
-import { RefreshCw, Search } from 'lucide-react';
+import { ArrowUpDown, RefreshCw, Search } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
+
+type SortOption = 'sync_desc' | 'sync_asc' | 'name_asc' | 'name_desc';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
@@ -16,11 +18,12 @@ const Dashboard: React.FC = () => {
   
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('sync_desc');
 
   const enabledAgents = useMemo(() => agents.filter(a => a.enabled), [agents]);
 
-  const filteredSkills = useMemo(() => {
-    return skills.filter(skill => {
+  const filteredAndSortedSkills = useMemo(() => {
+    let result = skills.filter((skill) => {
       const query = search.toLowerCase();
       const matchesSearch =
         skill.name.toLowerCase().includes(query) ||
@@ -28,7 +31,29 @@ const Dashboard: React.FC = () => {
       const matchesAgent = selectedAgent === 'all' || skill.enabledAgents.includes(selectedAgent as AgentId);
       return matchesSearch && matchesAgent;
     });
-  }, [skills, search, selectedAgent]);
+
+    const getSyncTime = (lastSync?: string) => {
+      if (!lastSync) return 0;
+      const time = Date.parse(lastSync);
+      return Number.isFinite(time) ? time : 0;
+    };
+
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc':
+          return a.name.localeCompare(b.name);
+        case 'name_desc':
+          return b.name.localeCompare(a.name);
+        case 'sync_asc':
+          return getSyncTime(a.lastSync) - getSyncTime(b.lastSync);
+        case 'sync_desc':
+        default:
+          return getSyncTime(b.lastSync) - getSyncTime(a.lastSync);
+      }
+    });
+
+    return result;
+  }, [skills, search, selectedAgent, sortBy]);
 
   const handleSyncAll = async () => {
     setSyncModalOpen(true);
@@ -69,21 +94,45 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="space-y-6">
-        {/* Search */}
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-black">
-            <Search size={18} />
+        {/* Search + Sort */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative group flex-1">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-black">
+              <Search size={18} />
+            </div>
+            <input
+              type="text"
+              placeholder="搜索技能名称或 ID..."
+              className="w-full pl-11 pr-4 py-3 bg-white border border-[#eaeaea] focus:border-black focus:ring-0 rounded-lg text-[14px] transition-all"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="搜索技能"
+              name="search"
+              autoComplete="off"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="搜索技能名称、描述或平台..."
-            className="w-full pl-11 pr-4 py-3 bg-white border border-[#eaeaea] focus:border-black focus:ring-0 rounded-lg text-[14px] transition-all"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            aria-label="搜索技能"
-            name="search"
-            autoComplete="off"
-          />
+
+          <div className="relative min-w-[160px] sm:w-[180px]">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+              <ArrowUpDown size={16} />
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              aria-label="排序"
+              className="w-full pl-11 pr-10 py-3 bg-white border border-[#eaeaea] hover:border-black focus:border-black focus:ring-0 rounded-lg text-[13px] font-semibold appearance-none cursor-pointer transition-all"
+            >
+              <option value="sync_desc">最近同步</option>
+              <option value="sync_asc">最早同步</option>
+              <option value="name_asc">名称 (A-Z)</option>
+              <option value="name_desc">名称 (Z-A)</option>
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-300">
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M1 1L5 5L9 1" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* Filter Tabs */}
@@ -123,9 +172,9 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {filteredSkills.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSkills.map(skill => (
+      {filteredAndSortedSkills.length > 0 ? (
+        <div key={sortBy} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+          {filteredAndSortedSkills.map(skill => (
             <SkillCard key={skill.id} skill={skill} />
           ))}
         </div>

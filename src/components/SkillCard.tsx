@@ -4,8 +4,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { Skill } from '../types';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 import { PLATFORM_ICONS } from '../constants';
 import { Trash2, CheckSquare } from 'lucide-react';
+import { openSkillFolder } from '../services/openSkillFolder';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,11 +30,24 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   const toggleAgent = useSkillStore((state) => state.toggleAgent);
   const setSkillAgents = useSkillStore((state) => state.setSkillAgents);
   const removeSkill = useSkillStore((state) => state.removeSkill);
+  const storagePath = useSettingsStore((state) => state.storagePath);
 
   // 判断状态逻辑
   const activeAgentIds = enabledAgentsInSystem.map(a => a.id);
   const isAllEnabled = activeAgentIds.length > 0 && activeAgentIds.every(id => skill.enabledAgents.includes(id));
   const hasSomeEnabled = skill.enabledAgents.length > 0;
+
+  const handleOpenFolder: React.MouseEventHandler<HTMLDivElement> = (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, textarea, select')) return;
+    void openSkillFolder(storagePath, skill.name).catch(console.error);
+  };
+
+  const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    void openSkillFolder(storagePath, skill.name).catch(console.error);
+  };
 
   const handleToggleAll = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,7 +60,14 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
   };
 
   return (
-    <div className="bg-white border border-[#eaeaea] rounded-xl p-6 transition-all group hover:border-black vercel-card-hover flex flex-col h-full relative">
+    <div
+      className="bg-white border border-[#eaeaea] rounded-xl p-6 transition-all group hover:border-black vercel-card-hover flex flex-col h-full relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+      title="点击打开文件夹"
+      role="button"
+      tabIndex={0}
+      onClick={handleOpenFolder}
+      onKeyDown={handleKeyDown}
+    >
       {/* 顶部标题和删除 */}
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-[16px] font-bold text-black tracking-tight leading-tight flex-1 pr-4">

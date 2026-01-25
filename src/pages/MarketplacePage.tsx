@@ -1,17 +1,25 @@
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ICONS } from '../constants';
 import { installSkillCli } from '../services/skillService';
+import { syncSkillDistribution } from '../services/syncService';
+import InstallSkillModal from '../components/InstallSkillModal';
+import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useToastStore } from '../stores/useToastStore';
 import { Globe, ExternalLink } from 'lucide-react';
-import { ArrowRight, Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import type { AgentId } from '../types';
 
 const MarketplacePage: React.FC = () => {
   const [repoUrl, setRepoUrl] = useState('');
   const [isInstalling, setIsInstalling] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [customName, setCustomName] = useState('');
+  const [selectedAgentIds, setSelectedAgentIds] = useState<AgentId[]>([]);
+
+  const agents = useAgentStore((s) => s.agents);
+  const enabledAgents = useMemo(() => agents.filter((a) => a.enabled), [agents]);
   const addSkill = useSkillStore((state) => state.addSkill);
   const addLog = useSkillStore((state) => state.addLog);
   const addToast = useToastStore((state) => state.addToast);
@@ -40,6 +48,7 @@ const MarketplacePage: React.FC = () => {
     const parts = repoUrl.split('/').filter(Boolean);
     const defaultName = parts[parts.length - 1] || 'new-skill';
     setCustomName(defaultName.replace('.git', '').replace('.zip', '').trim());
+    setSelectedAgentIds(enabledAgents.map((a) => a.id));
     setShowConfirmModal(true);
   };
 
@@ -55,17 +64,20 @@ const MarketplacePage: React.FC = () => {
 
     try {
       const newSkill = await installSkillCli(repoUrl.trim(), skillName);
-      addSkill(newSkill);
+      const withAgents = { ...newSkill, enabledAgents: selectedAgentIds };
+      addSkill(withAgents);
+      await syncSkillDistribution(withAgents, agents);
       addLog({
         action: 'install',
-        skillId: newSkill.name,
+        skillId: withAgents.name,
         status: 'success',
         message: `从 ${repoUrl} 安装成功`
       });
-      addToast(`技能 "${newSkill.name}" 安装成功`, 'success');
+      addToast(`技能 "${withAgents.name}" 安装成功`, 'success');
       setIsInstalling(false);
       setRepoUrl('');
       setCustomName('');
+      setSelectedAgentIds([]);
     } catch (e) {
       console.error(e);
       addLog({
@@ -77,6 +89,18 @@ const MarketplacePage: React.FC = () => {
       addToast('安装失败，请检查地址是否可访问', 'error');
       setIsInstalling(false);
     }
+  };
+
+  const toggleAgent = (id: AgentId) => {
+    setSelectedAgentIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const toggleAllAgents = () => {
+    setSelectedAgentIds((prev) => {
+      if (enabledAgents.length === 0) return prev;
+      const allSelected = enabledAgents.every((a) => prev.includes(a.id));
+      return allSelected ? [] : enabledAgents.map((a) => a.id);
+    });
   };
 
   const resourceSites = [
@@ -149,68 +173,18 @@ const MarketplacePage: React.FC = () => {
         )}
       </section>
 
-      {/* 技能名称确认 Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-white/60 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={() => setShowConfirmModal(false)}
-          />
-          <div className="relative w-full max-w-[400px] bg-white border border-[#eaeaea] rounded-2xl shadow-[0_24px_48px_rgba(0,0,0,0.1)] overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-5 border-b border-[#eaeaea]">
-              <h3 className="text-[16px] font-bold text-black tracking-tight">确认技能信息</h3>
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="p-1 hover:bg-slate-50 rounded-md transition-colors text-slate-400"
-                aria-label="关闭"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="space-y-2">
-                <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">
-                  目标技能名称
-                </label>
-                <input
-                  autoFocus
-                  type="text"
-                  placeholder="例如: baoyu-post-to-x"
-                  className="w-full bg-[#fafafa] border border-[#eaeaea] rounded-xl px-4 py-3 text-[14px] text-black focus:border-black focus:ring-0 transition-all outline-none"
-                  value={customName}
-                  onChange={(e) => setCustomName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCompleteInstall()}
-                />
-                <p className="text-[11px] text-slate-400">该名称将作为 `--skill` 参数传入并用于本地目录标识。</p>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-4 flex gap-3">
-                <ICONS.Github size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                <div className="text-[12px] text-slate-500 font-mono break-all leading-relaxed">
-                  {repoUrl}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-[#fafafa] border-t border-[#eaeaea] flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 text-[13px] font-bold text-slate-500 hover:text-black transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleCompleteInstall}
-                className="px-6 py-2 bg-black text-white text-[13px] font-bold rounded-lg hover:bg-slate-800 transition-all flex items-center gap-2"
-              >
-                确认安装
-                <ArrowRight size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <InstallSkillModal
+        open={showConfirmModal}
+        repoUrl={repoUrl}
+        skillName={customName}
+        enabledAgents={enabledAgents}
+        selectedAgentIds={selectedAgentIds}
+        onChangeSkillName={setCustomName}
+        onToggleAgent={toggleAgent}
+        onToggleAll={toggleAllAgents}
+        onCancel={() => setShowConfirmModal(false)}
+        onConfirm={handleCompleteInstall}
+      />
 
       <div className="h-px bg-[#eaeaea]"></div>
 

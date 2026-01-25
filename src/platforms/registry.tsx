@@ -67,7 +67,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.CLAWDBOT,
     name: 'Clawdbot',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/clawdbot.svg', alt: 'clawdbot' },
     iconKey: 'clawdbot',
     defaultEnabled: false,
     globalPath: '~/.clawdbot/skills/',
@@ -121,7 +121,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.DROID,
     name: 'Droid',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/droid.svg', alt: 'droid' },
     iconKey: 'droid',
     defaultEnabled: false,
     globalPath: '~/.factory/skills/',
@@ -157,7 +157,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.KIRO_CLI,
     name: 'Kiro CLI',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/kiro-cli.svg', alt: 'kiro-cli' },
     iconKey: 'kiro',
     defaultEnabled: false,
     globalPath: '~/.kiro/skills/',
@@ -202,7 +202,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.QODER,
     name: 'Qoder',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/qoder.svg', alt: 'qoder' },
     iconKey: 'qoder',
     defaultEnabled: false,
     globalPath: '~/.qoder/skills/',
@@ -220,7 +220,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.ROO_CODE,
     name: 'Roo Code',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/roo-code.svg', alt: 'roo-code' },
     iconKey: 'roo',
     defaultEnabled: false,
     globalPath: '~/.roo/skills/',

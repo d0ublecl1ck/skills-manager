@@ -1,9 +1,6 @@
 import React from 'react';
 
 import { AgentId, type AgentInfo } from '../types';
-import { ClaudeIcon } from '../assets/icons/ClaudeIcon';
-import { ClineIcon } from '../assets/icons/ClineIcon';
-import { CopilotIcon } from '../assets/icons/CopilotIcon';
 
 type PlatformIconDef =
   | { kind: 'component'; component: React.FC<{ size?: number; className?: string }> }
@@ -61,7 +58,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.CLAUDE_CODE,
     name: 'Claude Code',
-    icon: { kind: 'component', component: ClaudeIcon },
+    icon: { kind: 'img', src: '/platform-icons/claude-code.svg', alt: 'claude-code' },
     iconKey: 'claudecode',
     defaultEnabled: true,
     globalPath: '~/.claude/skills/',
@@ -79,7 +76,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.CLINE,
     name: 'Cline',
-    icon: { kind: 'component', component: ClineIcon },
+    icon: { kind: 'img', src: '/platform-icons/cline.svg', alt: 'cline' },
     iconKey: 'cline',
     defaultEnabled: false,
     globalPath: '~/.cline/skills/',
@@ -106,7 +103,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.COPILOT,
     name: 'GitHub Copilot',
-    icon: { kind: 'component', component: CopilotIcon },
+    icon: { kind: 'img', src: '/platform-icons/copilot.svg', alt: 'copilot' },
     iconKey: 'copilot',
     defaultEnabled: false,
     globalPath: '~/.copilot/skills/',
@@ -133,7 +130,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.GEMINI_CLI,
     name: 'Gemini CLI',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/gemini-cli.svg', alt: 'gemini-cli' },
     iconKey: 'gemini',
     defaultEnabled: false,
     globalPath: '~/.gemini/skills/',
@@ -142,7 +139,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.GOOSE,
     name: 'Goose',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/goose.svg', alt: 'goose' },
     iconKey: 'goose',
     defaultEnabled: false,
     globalPath: '~/.config/goose/skills/',
@@ -151,7 +148,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.KILO_CODE,
     name: 'Kilo Code',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/kilo-code.svg', alt: 'kilo-code' },
     iconKey: 'kilocode',
     defaultEnabled: false,
     globalPath: '~/.kilocode/skills/',
@@ -214,7 +211,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.QWEN_CODE,
     name: 'Qwen Code',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/qwen-code.svg', alt: 'qwen-code' },
     iconKey: 'qwen',
     defaultEnabled: false,
     globalPath: '~/.qwen/skills/',
@@ -232,7 +229,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.TRAE,
     name: 'Trae',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/trae.svg', alt: 'trae' },
     iconKey: 'trae',
     defaultEnabled: false,
     globalPath: '~/.trae/skills/',
@@ -241,7 +238,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.WINDSURF,
     name: 'Windsurf',
-    icon: GENERIC_ICON,
+    icon: { kind: 'img', src: '/platform-icons/windsurf.svg', alt: 'windsurf' },
     iconKey: 'windsurf',
     defaultEnabled: false,
     globalPath: '~/.codeium/windsurf/skills/',

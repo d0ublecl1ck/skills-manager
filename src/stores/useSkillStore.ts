@@ -3,7 +3,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Skill, AgentId, OperationLog } from '../types';
 import { reinstallSkill, uninstallSkill } from '../services/skillService';
-import { syncAllSkillsDistribution, syncSkillDistribution } from '../services/syncService';
+import {
+  type SyncAllSkillsDistributionProgressLog,
+  syncAllSkillsDistribution,
+  syncAllSkillsDistributionWithProgress,
+  syncSkillDistribution,
+} from '../services/syncService';
 import { useAgentStore } from './useAgentStore';
 import { useSettingsStore } from './useSettingsStore';
 
@@ -22,7 +27,10 @@ interface SkillState {
   updateSkill: (skillId: string, updates: Partial<Skill>) => void;
   toggleAgent: (skillId: string, agentId: AgentId) => void;
   setSkillAgents: (skillId: string, agentIds: AgentId[]) => void;
-  enableAllSkillsForAgent: (agentId: AgentId) => void;
+  enableAllSkillsForAgent: (
+    agentId: AgentId,
+    options?: { onProgress?: (log: SyncAllSkillsDistributionProgressLog) => void },
+  ) => Promise<void>;
   addLog: (log: Omit<OperationLog, 'id' | 'timestamp'>) => void;
   adoptSkill: (skillId: string, updates: Pick<Skill, 'sourceUrl' | 'enabledAgents'> & Partial<Skill>) => void;
   reInstallSkill: (skillId: string) => Promise<void>;
@@ -190,19 +198,26 @@ export const useSkillStore = create<SkillState>()(
 
         return { skills };
       }),
-      enableAllSkillsForAgent: (agentId) => set((state) => {
+      enableAllSkillsForAgent: async (agentId, options) => {
         let changed = false;
-        const skills = state.skills.map((s) => {
+        const current = get().skills;
+        const skills = current.map((s) => {
           if (s.enabledAgents.includes(agentId)) return s;
           changed = true;
           return { ...s, enabledAgents: [...s.enabledAgents, agentId] };
         });
 
-        if (!changed) return {};
+        if (!changed) return;
 
-        void syncAllSkillsDistribution(skills, useAgentStore.getState().agents).catch(console.error);
-        return { skills };
-      }),
+        set({ skills });
+
+        const agents = useAgentStore.getState().agents;
+        if (options?.onProgress) {
+          await syncAllSkillsDistributionWithProgress(skills, agents, options.onProgress);
+        } else {
+          await syncAllSkillsDistribution(skills, agents);
+        }
+      },
       addLog: (log) => set((state) => ({
         logs: [
           {

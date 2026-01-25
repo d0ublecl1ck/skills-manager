@@ -25,7 +25,13 @@ fn normalize_install_url(input: &str) -> String {
 fn parse_name_from_dir(dir: &Path, fallback_name: &str) -> String {
     let mut name = fallback_name.to_string();
 
-    let candidates = ["SKILL.md", "skill.md", "README.md", "README.MD", "readme.md"];
+    let candidates = [
+        "SKILL.md",
+        "skill.md",
+        "README.md",
+        "README.MD",
+        "readme.md",
+    ];
     let mut content: Option<String> = None;
     for file in candidates {
         let path = dir.join(file);
@@ -72,16 +78,12 @@ fn install_zip(url: &str, dest: &Path) -> Result<(), String> {
     run_cmd(curl, "curl")?;
 
     let mut unzip = Command::new("unzip");
-    unzip
-        .arg("-q")
-        .arg(&zip_path)
-        .arg("-d")
-        .arg(&extract_dir);
+    unzip.arg("-q").arg(&zip_path).arg("-d").arg(&extract_dir);
     run_cmd(unzip, "unzip")?;
 
     let mut top_dirs: Vec<PathBuf> = vec![];
-    for entry in fs::read_dir(&extract_dir)
-        .map_err(|e| format!("Failed to read extract dir: {e}"))?
+    for entry in
+        fs::read_dir(&extract_dir).map_err(|e| format!("Failed to read extract dir: {e}"))?
     {
         let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
         let p = entry.path();
@@ -130,7 +132,10 @@ fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
 }
 
 #[tauri::command]
-pub(crate) fn bootstrap_skills_store(skills: Vec<Skill>, storage_path: String) -> Result<(), String> {
+pub(crate) fn bootstrap_skills_store(
+    skills: Vec<Skill>,
+    storage_path: String,
+) -> Result<(), String> {
     let dir = manager_store_root(&storage_path)?;
 
     for skill in skills {

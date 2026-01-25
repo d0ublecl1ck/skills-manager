@@ -7,17 +7,15 @@ import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
 import { ArrowUpDown, CheckCheck, RefreshCw, Search } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
-import { useToastStore } from '../stores/useToastStore';
 
 type SortOption = 'sync_desc' | 'sync_asc' | 'name_asc' | 'name_desc';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
-  const enableAllSkillsForAgent = useSkillStore((state) => state.enableAllSkillsForAgent);
   const agents = useAgentStore(state => state.agents);
   const setSyncModalOpen = useUIStore((state) => state.setSyncModalOpen);
   const setDevModalOpen = useUIStore((state) => state.setDevModalOpen);
-  const addToast = useToastStore((state) => state.addToast);
+  const openDistributionModal = useUIStore((state) => state.openDistributionModal);
   
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
@@ -27,9 +25,9 @@ const Dashboard: React.FC = () => {
 
   const handleEnableAllForCurrent = () => {
     if (selectedAgent === 'all') return;
-    const agentName = agents.find((a) => a.id === selectedAgent)?.name ?? '';
-    enableAllSkillsForAgent(selectedAgent as AgentId);
-    addToast(`已为 ${agentName} 开启库中所有技能`, 'success');
+    const agent = agents.find((a) => a.id === selectedAgent);
+    if (!agent) return;
+    openDistributionModal(agent.id, agent.name);
   };
 
   const filteredAndSortedSkills = useMemo(() => {
@@ -128,7 +126,7 @@ const Dashboard: React.FC = () => {
                 type="button"
                 onClick={handleEnableAllForCurrent}
                 className="flex items-center gap-2 px-4 py-3 bg-white border border-[#eaeaea] hover:border-black rounded-lg text-[13px] font-semibold transition-all group"
-                title={`为 ${agents.find(a => a.id === selectedAgent)?.name} 开启库中所有已绑定的技能`}
+                title={`为 ${agents.find(a => a.id === selectedAgent)?.name} 开启库中所有技能`}
               >
                 <CheckCheck size={16} className="opacity-40 group-hover:opacity-100" />
                 <span className="hidden md:inline">一键开启全部</span>

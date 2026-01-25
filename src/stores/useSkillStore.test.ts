@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 
 import { reinstallSkill, uninstallSkill } from '../services/skillService';
-import { syncAllSkillsDistribution, syncSkillDistribution } from '../services/syncService';
+import {
+  syncAllSkillsDistribution,
+  syncAllSkillsDistributionWithProgress,
+  syncSkillDistribution,
+} from '../services/syncService';
 import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from './useAgentStore';
 import { useSettingsStore } from './useSettingsStore';
@@ -9,6 +13,7 @@ import { useSkillStore } from './useSkillStore';
 
 vi.mock('../services/syncService', () => ({
   syncAllSkillsDistribution: vi.fn(() => Promise.resolve()),
+  syncAllSkillsDistributionWithProgress: vi.fn(() => Promise.resolve()),
   syncSkillDistribution: vi.fn(() => Promise.resolve()),
 }));
 
@@ -48,6 +53,7 @@ describe('useSkillStore (recycle bin)', () => {
     useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
 
     vi.mocked(syncAllSkillsDistribution).mockClear();
+    vi.mocked(syncAllSkillsDistributionWithProgress).mockClear();
     vi.mocked(syncSkillDistribution).mockClear();
     vi.mocked(uninstallSkill).mockClear();
     vi.mocked(reinstallSkill).mockClear();
@@ -169,6 +175,7 @@ describe('useSkillStore (update/adopt)', () => {
     useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
 
     vi.mocked(syncAllSkillsDistribution).mockClear();
+    vi.mocked(syncAllSkillsDistributionWithProgress).mockClear();
     vi.mocked(syncSkillDistribution).mockClear();
     vi.mocked(uninstallSkill).mockClear();
     vi.mocked(reinstallSkill).mockClear();
@@ -241,7 +248,7 @@ describe('useSkillStore (enable all)', () => {
     vi.mocked(syncSkillDistribution).mockClear();
   });
 
-  it('enableAllSkillsForAgent adds agentId to adopted skills only (no duplicates)', () => {
+  it('enableAllSkillsForAgent adds agentId to all skills (no duplicates)', async () => {
     const adoptedMissing: Skill = {
       id: 'adopted-missing',
       name: 'Adopted Missing',
@@ -265,7 +272,7 @@ describe('useSkillStore (enable all)', () => {
     };
     useSkillStore.setState({ skills: [adoptedMissing, adoptedHas, external] });
 
-    useSkillStore.getState().enableAllSkillsForAgent(AgentId.CODEX);
+    await useSkillStore.getState().enableAllSkillsForAgent(AgentId.CODEX);
 
     const next = useSkillStore.getState().skills;
     expect(next.find((s) => s.id === 'adopted-missing')?.enabledAgents).toEqual([AgentId.CODEX]);
@@ -278,7 +285,7 @@ describe('useSkillStore (enable all)', () => {
     expect(syncedSkills).toHaveLength(3);
   });
 
-  it('enableAllSkillsForAgent no-ops when no adopted skills change', () => {
+  it('enableAllSkillsForAgent no-ops when no skills change', async () => {
     const skill: Skill = {
       id: 's1',
       name: 'Already Enabled',
@@ -288,7 +295,7 @@ describe('useSkillStore (enable all)', () => {
     };
     useSkillStore.setState({ skills: [skill] });
 
-    useSkillStore.getState().enableAllSkillsForAgent(AgentId.CODEX);
+    await useSkillStore.getState().enableAllSkillsForAgent(AgentId.CODEX);
 
     expect(vi.mocked(syncAllSkillsDistribution)).not.toHaveBeenCalled();
   });

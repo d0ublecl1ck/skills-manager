@@ -12,6 +12,7 @@ describe("PLATFORM_ICONS", () => {
       { id: AgentId.CODEX, expectedSrc: "/platform-icons/codex.svg" },
       { id: AgentId.CURSOR, expectedSrc: "/platform-icons/cursor.svg" },
       { id: AgentId.OPENCODE, expectedSrc: "/platform-icons/opencode.svg" },
+      { id: AgentId.KIRO_CLI, expectedSrc: "/platform-icons/generic.svg" },
     ];
 
     for (const { id, expectedSrc } of cases) {

@@ -122,8 +122,10 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
 
 fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
     [
-        "~/.agents/skills",        // Amp
+        "~/.config/agents/skills", // Amp (XDG-style)
+        "~/.agents/skills",        // Amp (legacy)
         "~/.codex/skills/custom",  // Codex custom
+        "~/.codex/skills",         // Codex
     ]
     .iter()
     .map(|root| expand_tilde(root).join(skill_dir_name))
@@ -227,7 +229,7 @@ pub(crate) async fn install_skill_cli(
 
         if !copied {
             return Err(format!(
-                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0} or ~/.codex/skills/custom/{0})",
+                "Installed skill directory not found under known locations (expected one of ~/.config/agents/skills/{0}, ~/.agents/skills/{0}, ~/.codex/skills/custom/{0}, ~/.codex/skills/{0})",
                 desired_name
             ));
         }
@@ -297,8 +299,13 @@ mod tests {
     #[test]
     fn candidate_post_install_sources_prefers_agents_dir_first() {
         let sources = candidate_post_install_sources("demo-skill");
-        assert!(sources.len() >= 2);
-        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
-        assert!(sources[1].to_string_lossy().contains("/.codex/skills/custom/demo-skill"));
+        assert!(sources.len() >= 4);
+        assert!(sources[0]
+            .to_string_lossy()
+            .contains("/.config/agents/skills/demo-skill"));
+        assert!(sources[1].to_string_lossy().contains("/.agents/skills/demo-skill"));
+        assert!(sources[2]
+            .to_string_lossy()
+            .contains("/.codex/skills/custom/demo-skill"));
     }
 }

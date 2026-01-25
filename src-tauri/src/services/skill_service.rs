@@ -122,11 +122,7 @@ fn install_git(url: &str, dest: &Path) -> Result<(), String> {
 
 fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
     [
-        "~/.agent/skills",         // Antigravity
-        "~/.config/agents/skills", // Amp (XDG-style)
-        "~/.agents/skills",        // Amp (legacy)
-        "~/.codex/skills/custom",  // Codex custom
-        "~/.codex/skills",         // Codex
+        "~/.agents/skills", // npx skills add -g installs here
     ]
     .iter()
     .map(|root| expand_tilde(root).join(skill_dir_name))
@@ -220,8 +216,8 @@ pub(crate) fn reinstall_skill(
         .arg(&url)
         .arg("--skill")
         .arg(&safe_name)
-        .arg("-y")
-        .arg("-g");
+        .arg("-g")
+        .arg("-y");
     run_cmd(npx, "npx skills add")?;
 
     let temp_dest = store_dir.join(format!(".tmp-reinstall-{}", generate_id()));
@@ -238,7 +234,7 @@ pub(crate) fn reinstall_skill(
 
     if !copied {
         return Err(format!(
-            "Installed skill directory not found under known locations (expected one of ~/.agent/skills/{0}, ~/.config/agents/skills/{0}, ~/.agents/skills/{0}, ~/.codex/skills/custom/{0}, ~/.codex/skills/{0})",
+            "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
             safe_name
         ));
     }
@@ -283,8 +279,8 @@ pub(crate) async fn install_skill_cli(
             .arg(&url)
             .arg("--skill")
             .arg(&desired_name)
-            .arg("-y")
-            .arg("-g");
+            .arg("-g")
+            .arg("-y");
         run_cmd(npx, "npx skills add")?;
 
         let store_root = manager_store_root(&storage_path)?;
@@ -301,7 +297,7 @@ pub(crate) async fn install_skill_cli(
 
         if !copied {
             return Err(format!(
-                "Installed skill directory not found under known locations (expected one of ~/.config/agents/skills/{0}, ~/.agents/skills/{0}, ~/.codex/skills/custom/{0}, ~/.codex/skills/{0})",
+                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
                 desired_name
             ));
         }
@@ -377,14 +373,7 @@ mod tests {
     #[test]
     fn candidate_post_install_sources_prefers_agents_dir_first() {
         let sources = candidate_post_install_sources("demo-skill");
-        assert!(sources.len() >= 5);
-        assert!(sources[0].to_string_lossy().contains("/.agent/skills/demo-skill"));
-        assert!(sources[1]
-            .to_string_lossy()
-            .contains("/.config/agents/skills/demo-skill"));
-        assert!(sources[2].to_string_lossy().contains("/.agents/skills/demo-skill"));
-        assert!(sources[3]
-            .to_string_lossy()
-            .contains("/.codex/skills/custom/demo-skill"));
+        assert_eq!(sources.len(), 1);
+        assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
     }
 }

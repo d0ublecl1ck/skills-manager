@@ -170,7 +170,10 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
                 <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-red-600 text-white hover:bg-red-700"
-                  onClick={() => removeSkill(skill.id)}
+                  onClick={() => {
+                    removeSkill(skill.id);
+                    addToast(`"${skill.name}" 已移入垃圾箱`, 'success');
+                  }}
                 >
                   移入垃圾箱
                 </AlertDialogAction>

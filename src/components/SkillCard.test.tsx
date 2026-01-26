@@ -6,9 +6,16 @@ import SkillCard from './SkillCard';
 import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
+import { useToastStore } from '../stores/useToastStore';
 
 vi.mock('../services/skillMdService', () => ({
   getSkillDescriptionFromMd: vi.fn(async () => null),
+}));
+
+vi.mock('../services/syncService', () => ({
+  syncAllSkillsDistribution: vi.fn(() => Promise.resolve()),
+  syncAllSkillsDistributionWithProgress: vi.fn(() => Promise.resolve()),
+  syncSkillDistribution: vi.fn(() => Promise.resolve()),
 }));
 
 const TEST_AGENTS: AgentInfo[] = [
@@ -24,8 +31,10 @@ const TEST_AGENTS: AgentInfo[] = [
 
 describe('SkillCard', () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    localStorage.clear();
     useAgentStore.setState({ agents: TEST_AGENTS });
+    useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
+    useToastStore.getState().clearToasts();
   });
 
   afterEach(() => {
@@ -113,5 +122,24 @@ describe('SkillCard', () => {
 
     render(<SkillCard skill={vercelSkill} />);
     expect(screen.getByText('来自 Vercel')).toBeTruthy();
+  });
+
+  it('移入垃圾箱后会 toast 提示', async () => {
+    const user = userEvent.setup();
+
+    const skill: Skill = {
+      id: 's1',
+      name: 'demo-skill',
+      enabledAgents: [],
+    };
+    useSkillStore.setState({ skills: [skill], recycleBin: [], logs: [] });
+
+    render(<SkillCard skill={skill} />);
+
+    await user.click(screen.getByRole('button', { name: '移动到垃圾箱' }));
+    await user.click(await screen.findByRole('button', { name: '移入垃圾箱' }));
+
+    expect(useToastStore.getState().toasts[0]?.message).toBe('"demo-skill" 已移入垃圾箱');
+    expect(useSkillStore.getState().recycleBin.some((s) => s.id === 's1')).toBe(true);
   });
 });

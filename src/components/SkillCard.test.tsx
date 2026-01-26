@@ -1,117 +1,44 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import SkillCard from './SkillCard';
-import { AgentId, type AgentInfo, type Skill } from '../types';
 import { useAgentStore } from '../stores/useAgentStore';
 import { useSkillStore } from '../stores/useSkillStore';
+import { useToastStore } from '../stores/useToastStore';
+import type { Skill } from '../types';
 
-vi.mock('../services/skillMdService', () => ({
-  getSkillDescriptionFromMd: vi.fn(async () => null),
+vi.mock('../services/syncService', () => ({
+  syncAllSkillsDistribution: vi.fn(() => Promise.resolve()),
+  syncAllSkillsDistributionWithProgress: vi.fn(() => Promise.resolve()),
+  syncSkillDistribution: vi.fn(() => Promise.resolve()),
 }));
-
-const TEST_AGENTS: AgentInfo[] = [
-  {
-    id: AgentId.CODEX,
-    name: 'Codex',
-    defaultPath: '~/.codex/skills/',
-    currentPath: '~/.codex/skills/',
-    enabled: true,
-    icon: 'codex',
-  },
-];
 
 describe('SkillCard', () => {
   beforeEach(() => {
-    window.localStorage.clear();
-    useAgentStore.setState({ agents: TEST_AGENTS });
+    localStorage.clear();
+    useAgentStore.setState({ agents: [] });
+    useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
+    useToastStore.getState().clearToasts();
   });
 
-  afterEach(() => {
-    cleanup();
-  });
-
-  it('平台受控技能点击“覆盖重装”会调用 reInstallSkill', async () => {
-    const reInstallSkill = vi.fn(async () => {});
-    useSkillStore.setState({ reInstallSkill });
-
-    const skill: Skill = {
-      id: 'test-skill',
-      name: 'Test Skill',
-      enabledAgents: [],
-      sourceUrl: 'github.com/foo/bar',
-      installSource: 'platform',
-      isAdopted: true,
-    };
-
-    render(<SkillCard skill={skill} />);
-    expect(screen.getByText('来自 GitHub')).toBeTruthy();
+  it('移入垃圾箱后会 toast 提示', async () => {
     const user = userEvent.setup();
 
-    await user.click(screen.getByTitle('检查并执行更新'));
-
-    expect(reInstallSkill).toHaveBeenCalledTimes(1);
-    expect(reInstallSkill).toHaveBeenCalledWith('test-skill');
-  });
-
-  it('外部识别技能点击更新会打开收编引导弹窗', async () => {
-    const reInstallSkill = vi.fn(async () => {});
-    useSkillStore.setState({ reInstallSkill });
-
     const skill: Skill = {
-      id: 'ext-1',
-      name: 'External Skill',
+      id: 's1',
+      name: 'demo-skill',
+      description: 'demo',
       enabledAgents: [],
-      installSource: 'external',
-      isAdopted: false,
     };
+    useSkillStore.setState({ skills: [skill], recycleBin: [], logs: [] });
 
     render(<SkillCard skill={skill} />);
-    expect(screen.queryByText(/^来自 /)).toBeNull();
-    const user = userEvent.setup();
 
-    await user.click(screen.getByTitle('绑定来源后开启自动更新'));
+    await user.click(screen.getByRole('button', { name: '移动到垃圾箱' }));
+    await user.click(await screen.findByRole('button', { name: '移入垃圾箱' }));
 
-    expect(screen.getByText('绑定来源引导')).toBeTruthy();
-    expect(reInstallSkill).not.toHaveBeenCalled();
-  });
-
-  it('外部识别技能允许开关 Agent', async () => {
-    const toggleAgent = vi.fn();
-    useSkillStore.setState({ toggleAgent });
-
-    const skill: Skill = {
-      id: 'ext-toggle-1',
-      name: 'External Toggle Skill',
-      enabledAgents: [],
-      installSource: 'external',
-      isAdopted: false,
-    };
-
-    render(<SkillCard skill={skill} />);
-    const user = userEvent.setup();
-
-    await user.click(screen.getByTitle('Codex'));
-
-    expect(toggleAgent).toHaveBeenCalledTimes(1);
-    expect(toggleAgent).toHaveBeenCalledWith('ext-toggle-1', AgentId.CODEX);
-    expect(screen.queryByText('绑定来源引导')).toBeNull();
-  });
-
-  it('根据 sourceUrl 域名显示来源名称', () => {
-    useSkillStore.setState({ reInstallSkill: vi.fn(async () => {}) });
-
-    const vercelSkill: Skill = {
-      id: 'vercel-1',
-      name: 'Vercel Skill',
-      enabledAgents: [],
-      sourceUrl: 'https://vercel.com/xxskill',
-      installSource: 'platform',
-      isAdopted: true,
-    };
-
-    render(<SkillCard skill={vercelSkill} />);
-    expect(screen.getByText('来自 Vercel')).toBeTruthy();
+    expect(useToastStore.getState().toasts[0]?.message).toBe('"demo-skill" 已移入垃圾箱');
+    expect(useSkillStore.getState().recycleBin.some((s) => s.id === 's1')).toBe(true);
   });
 });

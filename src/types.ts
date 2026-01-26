@@ -4,6 +4,7 @@ export enum AgentId {
   CLAUDE_CODE = 'claude-code',
   CLAWDBOT = 'clawdbot',
   CLINE = 'cline',
+  CODEBUDDY = 'codebuddy',
   CODEX = 'codex',
   COPILOT = 'copilot',
   CURSOR = 'cursor',

@@ -12,6 +12,7 @@ describe("PLATFORM_ICONS", () => {
       { id: AgentId.CLAUDE_CODE, expectedSrc: "/platform-icons/claude-code.svg" },
       { id: AgentId.CLAWDBOT, expectedSrc: "/platform-icons/clawdbot.svg" },
       { id: AgentId.CLINE, expectedSrc: "/platform-icons/cline.svg" },
+      { id: AgentId.CODEBUDDY, expectedSrc: "/platform-icons/codebuddy.svg" },
       { id: AgentId.CODEX, expectedSrc: "/platform-icons/codex.svg" },
       { id: AgentId.COPILOT, expectedSrc: "/platform-icons/copilot.svg" },
       { id: AgentId.CURSOR, expectedSrc: "/platform-icons/cursor.svg" },

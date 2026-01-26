@@ -1,7 +1,7 @@
 # Skills Manager
 
 <p align="center">
-  <img src="./assets/banner.svg" alt="Skills Manager banner (replace me)" width="1200" />
+  <img src="./assets/banner.png" alt="Skills Manager banner" width="1200" />
 </p>
 
 A local “skills control plane” for AI coding agents: scan, centralize, and toggle distribution across tools.
@@ -20,7 +20,7 @@ A local “skills control plane” for AI coding agents: scan, centralize, and t
 ## Demo
 
 <p align="center">
-  <img src="./assets/demo.svg" alt="Skills Manager demo (replace me)" width="900" />
+  <img src="./assets/demo.gif" alt="Skills Manager demo" width="900" />
 </p>
 
 ## Why you might want this

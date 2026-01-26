@@ -1,7 +1,7 @@
 # Skills Manager
 
 <p align="center">
-  <img src="./assets/banner.svg" alt="Skills Manager 横幅占位图（请替换）" width="1200" />
+  <img src="./assets/banner.png" alt="Skills Manager 横幅" width="1200" />
 </p>
 
 本地多 Agent Skills 管理器：一键搜集、统一管理、按平台分发开关。
@@ -21,7 +21,7 @@
 ## 演示（占位）
 
 <p align="center">
-  <img src="./assets/demo.svg" alt="Skills Manager 演示占位图（请替换）" width="900" />
+  <img src="./assets/demo.gif" alt="Skills Manager 演示" width="900" />
 </p>
 
 ## 亮点（适合写在推广文案里）

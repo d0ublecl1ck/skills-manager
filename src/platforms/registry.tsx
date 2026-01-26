@@ -83,7 +83,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
   {
     id: AgentId.CODEBUDDY,
     name: 'CodeBuddy',
-    icon: { kind: 'img', src: '/platform-icons/generic.svg', alt: 'codebuddy' },
+    icon: { kind: 'img', src: '/platform-icons/codebuddy.svg', alt: 'codebuddy' },
     iconKey: 'codebuddy',
     defaultEnabled: false,
     globalPath: '~/.codebuddy/skills/',

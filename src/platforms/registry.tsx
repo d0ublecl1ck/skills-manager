@@ -81,6 +81,15 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     projectPath: '.cline/skills/',
   },
   {
+    id: AgentId.CODEBUDDY,
+    name: 'CodeBuddy',
+    icon: { kind: 'img', src: '/platform-icons/generic.svg', alt: 'codebuddy' },
+    iconKey: 'codebuddy',
+    defaultEnabled: false,
+    globalPath: '~/.codebuddy/skills/',
+    projectPath: '.codebuddy/skills/',
+  },
+  {
     id: AgentId.CODEX,
     name: 'Codex',
     icon: { kind: 'img', src: '/platform-icons/codex.svg', alt: 'codex' },

@@ -586,6 +586,7 @@ mod tests {
             name: name.to_string(),
             default_path: root.to_string_lossy().to_string(),
             current_path: root.to_string_lossy().to_string(),
+            extra_paths: vec![],
             enabled,
             icon: "test".to_string(),
         }
@@ -737,6 +738,7 @@ mod tests {
             name: "X".to_string(),
             default_path: default_root.to_string_lossy().to_string(),
             current_path: current_root.to_string_lossy().to_string(),
+            extra_paths: vec![],
             enabled: true,
             icon: "test".to_string(),
         };

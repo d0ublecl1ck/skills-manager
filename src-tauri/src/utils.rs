@@ -137,8 +137,8 @@ pub(crate) fn agent_roots(agent: &AgentInfo) -> Vec<PathBuf> {
 
     push(&agent.current_path);
     push(&agent.default_path);
-    if agent.id == "codex" {
-        push("~/.codex/skills/.system/");
+    for p in &agent.extra_paths {
+        push(p);
     }
 
     roots
@@ -158,13 +158,14 @@ mod tests {
             name: id.to_string(),
             default_path: default_path.to_string(),
             current_path: current_path.to_string(),
+            extra_paths: vec![],
             enabled: true,
             icon: "test".to_string(),
         }
     }
 
     #[test]
-    fn agent_roots_adds_codex_system_dir() {
+    fn agent_roots_includes_extra_paths() {
         let _guard = ENV_LOCK.lock().unwrap();
 
         let tmp_home =
@@ -175,7 +176,8 @@ mod tests {
         let old_home = std::env::var("HOME").ok();
         std::env::set_var("HOME", &tmp_home);
 
-        let a = agent("codex", "~/some/current", "~/some/default");
+        let mut a = agent("codex", "~/some/current", "~/some/default");
+        a.extra_paths = vec!["~/.codex/skills/.system/".to_string()];
         let roots = agent_roots(&a);
 
         if let Some(v) = old_home {
@@ -186,12 +188,12 @@ mod tests {
 
         assert!(
             roots.contains(&tmp_home.join(".codex/skills/.system/")),
-            "codex roots should include ~/.codex/skills/.system/"
+            "roots should include extra paths"
         );
     }
 
     #[test]
-    fn agent_roots_does_not_add_system_dir_for_other_agents() {
+    fn agent_roots_does_not_add_extra_paths_when_empty() {
         let _guard = ENV_LOCK.lock().unwrap();
 
         let tmp_home = std::env::temp_dir().join(format!(
@@ -215,7 +217,7 @@ mod tests {
 
         assert!(
             !roots.contains(&tmp_home.join(".codex/skills/.system/")),
-            "non-codex roots should not include ~/.codex/skills/.system/"
+            "roots should not include paths that were not provided"
         );
     }
 }

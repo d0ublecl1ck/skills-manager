@@ -14,6 +14,7 @@ export interface PlatformDefinition {
   defaultEnabled: boolean;
   globalPath: string;
   projectPath: string;
+  extraGlobalPaths?: string[];
 }
 
 const makeImgPlatformIcon =
@@ -97,6 +98,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     defaultEnabled: true,
     globalPath: '~/.codex/skills/',
     projectPath: '.codex/skills/',
+    extraGlobalPaths: ['~/.codex/skills/.system/'],
   },
   {
     id: AgentId.COPILOT,
@@ -230,6 +232,7 @@ export const DEFAULT_AGENTS: AgentInfo[] = PLATFORM_REGISTRY.map((p) => ({
   name: p.name,
   defaultPath: p.globalPath,
   currentPath: p.globalPath,
+  extraPaths: p.extraGlobalPaths,
   enabled: p.defaultEnabled,
   icon: p.iconKey,
   projectPath: p.projectPath,

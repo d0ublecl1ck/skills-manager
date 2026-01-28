@@ -137,6 +137,85 @@ pub(crate) fn agent_roots(agent: &AgentInfo) -> Vec<PathBuf> {
 
     push(&agent.current_path);
     push(&agent.default_path);
+    if agent.id == "codex" {
+        push("~/.codex/skills/.system/");
+    }
 
     roots
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn agent(id: &str, current_path: &str, default_path: &str) -> AgentInfo {
+        AgentInfo {
+            id: id.to_string(),
+            name: id.to_string(),
+            default_path: default_path.to_string(),
+            current_path: current_path.to_string(),
+            enabled: true,
+            icon: "test".to_string(),
+        }
+    }
+
+    #[test]
+    fn agent_roots_adds_codex_system_dir() {
+        let _guard = ENV_LOCK.lock().unwrap();
+
+        let tmp_home =
+            std::env::temp_dir().join(format!("skills-manager-test-home-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&tmp_home);
+        ensure_dir(&tmp_home).unwrap();
+
+        let old_home = std::env::var("HOME").ok();
+        std::env::set_var("HOME", &tmp_home);
+
+        let a = agent("codex", "~/some/current", "~/some/default");
+        let roots = agent_roots(&a);
+
+        if let Some(v) = old_home {
+            std::env::set_var("HOME", v);
+        } else {
+            std::env::remove_var("HOME");
+        }
+
+        assert!(
+            roots.contains(&tmp_home.join(".codex/skills/.system/")),
+            "codex roots should include ~/.codex/skills/.system/"
+        );
+    }
+
+    #[test]
+    fn agent_roots_does_not_add_system_dir_for_other_agents() {
+        let _guard = ENV_LOCK.lock().unwrap();
+
+        let tmp_home = std::env::temp_dir().join(format!(
+            "skills-manager-test-home-{}-2",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&tmp_home);
+        ensure_dir(&tmp_home).unwrap();
+
+        let old_home = std::env::var("HOME").ok();
+        std::env::set_var("HOME", &tmp_home);
+
+        let a = agent("cursor", "~/some/current", "~/some/default");
+        let roots = agent_roots(&a);
+
+        if let Some(v) = old_home {
+            std::env::set_var("HOME", v);
+        } else {
+            std::env::remove_var("HOME");
+        }
+
+        assert!(
+            !roots.contains(&tmp_home.join(".codex/skills/.system/")),
+            "non-codex roots should not include ~/.codex/skills/.system/"
+        );
+    }
 }

@@ -37,7 +37,7 @@ If you use multiple tools (Codex / Claude Code / Cursor / Cline / Amp / Antigrav
 
 | Agent | Default skills directory |
 |---|---|
-| Codex | `~/.codex/skills/` |
+| Codex | `~/.codex/skills/` (also `~/.codex/skills/.system/`) |
 | Claude Code | `~/.claude/skills/` |
 | Cursor | `~/.cursor/skills/` |
 | Cline | `~/.cline/skills/` |

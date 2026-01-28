@@ -12,7 +12,7 @@ export interface PlatformDefinition {
   icon: PlatformIconDef;
   iconKey: string;
   defaultEnabled: boolean;
-  globalPath: string;
+  globalPaths: string[];
   projectPath: string;
 }
 
@@ -41,7 +41,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/amp.svg', alt: 'amp' },
     iconKey: 'amp',
     defaultEnabled: false,
-    globalPath: '~/.config/agents/skills/',
+    globalPaths: ['~/.config/agents/skills/'],
     projectPath: '.agents/skills/',
   },
   {
@@ -50,7 +50,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/antigravity.svg', alt: 'antigravity' },
     iconKey: 'antigravity',
     defaultEnabled: false,
-    globalPath: '~/.gemini/antigravity/skills/',
+    globalPaths: ['~/.gemini/antigravity/skills/'],
     projectPath: '.agent/skills/',
   },
   {
@@ -59,7 +59,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/claude-code.svg', alt: 'claude-code' },
     iconKey: 'claudecode',
     defaultEnabled: true,
-    globalPath: '~/.claude/skills/',
+    globalPaths: ['~/.claude/skills/'],
     projectPath: '.claude/skills/',
   },
   {
@@ -68,7 +68,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/clawdbot.svg', alt: 'clawdbot' },
     iconKey: 'clawdbot',
     defaultEnabled: false,
-    globalPath: '~/.clawdbot/skills/',
+    globalPaths: ['~/.clawdbot/skills/'],
     projectPath: 'skills/',
   },
   {
@@ -77,7 +77,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/cline.svg', alt: 'cline' },
     iconKey: 'cline',
     defaultEnabled: false,
-    globalPath: '~/.cline/skills/',
+    globalPaths: ['~/.cline/skills/'],
     projectPath: '.cline/skills/',
   },
   {
@@ -86,7 +86,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/codebuddy.svg', alt: 'codebuddy' },
     iconKey: 'codebuddy',
     defaultEnabled: false,
-    globalPath: '~/.codebuddy/skills/',
+    globalPaths: ['~/.codebuddy/skills/'],
     projectPath: '.codebuddy/skills/',
   },
   {
@@ -95,7 +95,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/codex.svg', alt: 'codex' },
     iconKey: 'codex',
     defaultEnabled: true,
-    globalPath: '~/.codex/skills/',
+    globalPaths: ['~/.codex/skills/', '~/.codex/skills/.system/'],
     projectPath: '.codex/skills/',
   },
   {
@@ -104,7 +104,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/copilot.svg', alt: 'copilot' },
     iconKey: 'copilot',
     defaultEnabled: false,
-    globalPath: '~/.copilot/skills/',
+    globalPaths: ['~/.copilot/skills/'],
     projectPath: '.github/skills/',
   },
   {
@@ -113,7 +113,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/cursor.svg', alt: 'cursor' },
     iconKey: 'cursor',
     defaultEnabled: false,
-    globalPath: '~/.cursor/skills/',
+    globalPaths: ['~/.cursor/skills/'],
     projectPath: '.cursor/skills/',
   },
   {
@@ -122,7 +122,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/droid.svg', alt: 'droid' },
     iconKey: 'droid',
     defaultEnabled: false,
-    globalPath: '~/.factory/skills/',
+    globalPaths: ['~/.factory/skills/'],
     projectPath: '.factory/skills/',
   },
   {
@@ -131,7 +131,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/gemini-cli.svg', alt: 'gemini-cli' },
     iconKey: 'gemini',
     defaultEnabled: false,
-    globalPath: '~/.gemini/skills/',
+    globalPaths: ['~/.gemini/skills/'],
     projectPath: '.gemini/skills/',
   },
   {
@@ -140,7 +140,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/goose.svg', alt: 'goose' },
     iconKey: 'goose',
     defaultEnabled: false,
-    globalPath: '~/.config/goose/skills/',
+    globalPaths: ['~/.config/goose/skills/'],
     projectPath: '.goose/skills/',
   },
   {
@@ -149,7 +149,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/kilo-code.svg', alt: 'kilo-code' },
     iconKey: 'kilocode',
     defaultEnabled: false,
-    globalPath: '~/.kilocode/skills/',
+    globalPaths: ['~/.kilocode/skills/'],
     projectPath: '.kilocode/skills/',
   },
   {
@@ -158,7 +158,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/kiro-cli.svg', alt: 'kiro-cli' },
     iconKey: 'kiro',
     defaultEnabled: false,
-    globalPath: '~/.kiro/skills/',
+    globalPaths: ['~/.kiro/skills/'],
     projectPath: '.kiro/skills/',
   },
   {
@@ -167,7 +167,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/opencode.svg', alt: 'opencode' },
     iconKey: 'opencode',
     defaultEnabled: false,
-    globalPath: '~/.config/opencode/skills/',
+    globalPaths: ['~/.config/opencode/skills/'],
     projectPath: '.opencode/skills/',
   },
   {
@@ -176,7 +176,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/qoder.svg', alt: 'qoder' },
     iconKey: 'qoder',
     defaultEnabled: false,
-    globalPath: '~/.qoder/skills/',
+    globalPaths: ['~/.qoder/skills/'],
     projectPath: '.qoder/skills/',
   },
   {
@@ -185,7 +185,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/qwen-code.svg', alt: 'qwen-code' },
     iconKey: 'qwen',
     defaultEnabled: false,
-    globalPath: '~/.qwen/skills/',
+    globalPaths: ['~/.qwen/skills/'],
     projectPath: '.qwen/skills/',
   },
   {
@@ -194,7 +194,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/roo-code.svg', alt: 'roo-code' },
     iconKey: 'roo',
     defaultEnabled: false,
-    globalPath: '~/.roo/skills/',
+    globalPaths: ['~/.roo/skills/'],
     projectPath: '.roo/skills/',
   },
   {
@@ -203,7 +203,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/trae.svg', alt: 'trae' },
     iconKey: 'trae',
     defaultEnabled: false,
-    globalPath: '~/.trae/skills/',
+    globalPaths: ['~/.trae/skills/'],
     projectPath: '.trae/skills/',
   },
   {
@@ -212,7 +212,7 @@ export const PLATFORM_REGISTRY: PlatformDefinition[] = [
     icon: { kind: 'img', src: '/platform-icons/windsurf.svg', alt: 'windsurf' },
     iconKey: 'windsurf',
     defaultEnabled: false,
-    globalPath: '~/.codeium/windsurf/skills/',
+    globalPaths: ['~/.codeium/windsurf/skills/'],
     projectPath: '.windsurf/skills/',
   },
 ];
@@ -228,10 +228,10 @@ export const PLATFORM_ICONS = Object.fromEntries(
 export const DEFAULT_AGENTS: AgentInfo[] = PLATFORM_REGISTRY.map((p) => ({
   id: p.id,
   name: p.name,
-  defaultPath: p.globalPath,
-  currentPath: p.globalPath,
+  defaultPath: p.globalPaths[1] ?? p.globalPaths[0] ?? '',
+  currentPath: p.globalPaths[0] ?? '',
   enabled: p.defaultEnabled,
   icon: p.iconKey,
   projectPath: p.projectPath,
-  globalPath: p.globalPath,
+  globalPath: p.globalPaths[0] ?? '',
 }));

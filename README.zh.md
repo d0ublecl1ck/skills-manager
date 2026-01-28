@@ -41,7 +41,7 @@
 
 | 平台 | 默认 skills 目录 |
 |---|---|
-| Codex | `~/.codex/skills/` |
+| Codex | `~/.codex/skills/`（以及 `~/.codex/skills/.system/`） |
 | Claude Code | `~/.claude/skills/` |
 | Cursor | `~/.cursor/skills/` |
 | Cline | `~/.cline/skills/` |

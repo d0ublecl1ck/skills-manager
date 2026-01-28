@@ -22,7 +22,7 @@ const TEST_AGENTS: AgentInfo[] = [
   {
     id: AgentId.CODEX,
     name: 'Codex',
-    defaultPath: '~/.codex/skills/',
+    defaultPath: '~/.codex/skills/.system/',
     currentPath: '~/.codex/skills/',
     enabled: true,
     icon: 'codex',

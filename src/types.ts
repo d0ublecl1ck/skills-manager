@@ -26,7 +26,6 @@ export interface AgentInfo {
   name: string;
   defaultPath: string;
   currentPath: string;
-  extraPaths?: string[];
   enabled: boolean;
   icon: string;
   projectPath?: string;

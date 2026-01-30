@@ -59,7 +59,15 @@ jobs:
         with:
           name: tauri-bundle-${{ matrix.os }}-${{ github.ref_name }}
           path: |
-            src-tauri/target/release/bundle/**
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.rpm
+            src-tauri/target/release/bundle/**/*.zip
+            src-tauri/target/release/bundle/**/*.tar.gz
+            src-tauri/target/release/bundle/**/*.sig
           if-no-files-found: error
           retention-days: 3
 

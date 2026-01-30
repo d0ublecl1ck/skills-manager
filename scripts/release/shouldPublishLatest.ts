@@ -1,5 +1,4 @@
 export type PublishLatestInput = {
-  commitMessage: string;
   prLabels: string[];
   releaseLabel: string;
 };
@@ -11,7 +10,6 @@ function normalize(input: string): string {
 }
 
 export function shouldPublishLatest({
-  commitMessage,
   prLabels,
   releaseLabel,
 }: PublishLatestInput): boolean {
@@ -22,10 +20,5 @@ export function shouldPublishLatest({
   );
   if (hasReleaseLabel) return true;
 
-  const message = commitMessage || "";
-  if (/\[release\]/i.test(message)) return true;
-  if (/(^|\s)release:\s*\S+/i.test(message)) return true;
-
   return false;
 }
-

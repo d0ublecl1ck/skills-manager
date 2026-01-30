@@ -1,4 +1,3 @@
-import { execSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { shouldPublishLatest } from "./shouldPublishLatest";
 
@@ -13,17 +12,6 @@ function getRequiredEnv(name: string): string {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required env: ${name}`);
   return value;
-}
-
-function getCommitMessage(): string {
-  try {
-    return execSync(`git log -1 --pretty=%B ${process.env.GITHUB_SHA}`, {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-    }).trim();
-  } catch {
-    return "";
-  }
 }
 
 function writeOutput(name: string, value: string): void {
@@ -77,8 +65,6 @@ async function main(): Promise<void> {
   const token = getRequiredEnv("GITHUB_TOKEN");
   const releaseLabel = process.env.RELEASE_LABEL || "release";
 
-  const commitMessage = getCommitMessage();
-
   let prLabels: string[] = [];
   try {
     const prs = await listPullRequestsForCommit({ ownerRepo, sha, token });
@@ -88,13 +74,12 @@ async function main(): Promise<void> {
         ?.map((l) => l?.name)
         .filter((name): name is string => Boolean(name)) ?? [];
   } catch (err) {
-    // If GitHub API is unavailable for some reason, fall back to commit message signal.
-    prLabels = [];
     console.error(String(err));
+    writeOutput("publish_latest", "false");
+    return;
   }
 
   const publishLatest = shouldPublishLatest({
-    commitMessage,
     prLabels,
     releaseLabel,
   });

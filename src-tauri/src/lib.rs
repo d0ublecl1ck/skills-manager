@@ -6,6 +6,7 @@ use services::skill_service::{
     bootstrap_skills_store, install_skill, install_skill_cli, reinstall_skill, reset_store,
     uninstall_skill,
 };
+use services::storage_service::{migrate_manager_store, select_manager_store_directory};
 use services::sync_service::{
     get_skill_description,
     sync_all_skills_distribution, sync_all_skills_distribution_with_progress,
@@ -21,6 +22,8 @@ pub fn run() {
             install_skill,
             install_skill_cli,
             reinstall_skill,
+            select_manager_store_directory,
+            migrate_manager_store,
             sync_skill_distribution,
             sync_all_skills_distribution,
             sync_all_skills_distribution_with_progress,

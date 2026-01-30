@@ -7,6 +7,8 @@ interface UIState {
   setFeedbackModalOpen: (open: boolean) => void;
   isSyncModalOpen: boolean;
   setSyncModalOpen: (open: boolean) => void;
+  isUpdateAllModalOpen: boolean;
+  setUpdateAllModalOpen: (open: boolean) => void;
   isDevModalOpen: boolean;
   setDevModalOpen: (open: boolean) => void;
   isDistributionModalOpen: boolean;
@@ -21,6 +23,8 @@ export const useUIStore = create<UIState>((set) => ({
   setFeedbackModalOpen: (open: boolean) => set({ isFeedbackModalOpen: open }),
   isSyncModalOpen: false,
   setSyncModalOpen: (open: boolean) => set({ isSyncModalOpen: open }),
+  isUpdateAllModalOpen: false,
+  setUpdateAllModalOpen: (open: boolean) => set({ isUpdateAllModalOpen: open }),
   isDevModalOpen: false,
   setDevModalOpen: (open: boolean) => set({ isDevModalOpen: open }),
   isDistributionModalOpen: false,

@@ -194,74 +194,78 @@ pub(crate) fn install_skill(repo_url: String, storage_path: String) -> Result<Sk
 }
 
 #[tauri::command]
-pub(crate) fn reinstall_skill(
+pub(crate) async fn reinstall_skill(
     skill_id: String,
     skill_name: String,
     repo_url: String,
     enabled_agents: Vec<String>,
     storage_path: String,
 ) -> Result<Skill, String> {
-    if repo_url.trim().is_empty() {
-        return Err("repoUrl is empty".to_string());
-    }
-
-    let store_dir = manager_store_root(&storage_path)?;
-    ensure_dir(&store_dir)?;
-
-    let safe_name = safe_skill_dir_name(&skill_name);
-    if safe_name.trim().is_empty() {
-        return Err("skillName is empty".to_string());
-    }
-
-    let url = normalize_install_url(&repo_url);
-
-    let mut npx = Command::new("npx");
-    npx.arg("skills")
-        .arg("add")
-        .arg(&url)
-        .arg("--skill")
-        .arg(&safe_name)
-        .arg("-g")
-        .arg("-y");
-    run_cmd(npx, "npx skills add")?;
-
-    let temp_dest = store_dir.join(format!(".tmp-reinstall-{}", generate_id()));
-    let _ = remove_dir_if_exists(&temp_dest);
-
-    let mut copied = false;
-    for src in candidate_post_install_sources(&safe_name) {
-        if src.exists() && src.is_dir() {
-            copy_dir_all(&src, &temp_dest)?;
-            copied = true;
-            break;
+    tauri::async_runtime::spawn_blocking(move || {
+        if repo_url.trim().is_empty() {
+            return Err("repoUrl is empty".to_string());
         }
-    }
 
-    if !copied {
-        return Err(format!(
-            "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
-            safe_name
-        ));
-    }
+        let store_dir = manager_store_root(&storage_path)?;
+        ensure_dir(&store_dir)?;
 
-    let final_dest = store_dir.join(&safe_name);
-    let _ = remove_dir_if_exists(&final_dest);
+        let safe_name = safe_skill_dir_name(&skill_name);
+        if safe_name.trim().is_empty() {
+            return Err("skillName is empty".to_string());
+        }
 
-    if let Err(_e) = fs::rename(&temp_dest, &final_dest) {
-        copy_dir_all(&temp_dest, &final_dest)?;
-        let _ = fs::remove_dir_all(&temp_dest);
-    }
+        let url = normalize_install_url(&repo_url);
 
-    let now = now_iso();
+        let mut npx = Command::new("npx");
+        npx.arg("skills")
+            .arg("add")
+            .arg(&url)
+            .arg("--skill")
+            .arg(&safe_name)
+            .arg("-g")
+            .arg("-y");
+        run_cmd(npx, "npx skills add")?;
 
-    Ok(Skill {
-        id: skill_id,
-        name: safe_name,
-        source_url: Some(repo_url),
-        enabled_agents,
-        last_sync: Some(now.clone()),
-        last_update: Some(now),
+        let temp_dest = store_dir.join(format!(".tmp-reinstall-{}", generate_id()));
+        let _ = remove_dir_if_exists(&temp_dest);
+
+        let mut copied = false;
+        for src in candidate_post_install_sources(&safe_name) {
+            if src.exists() && src.is_dir() {
+                copy_dir_all(&src, &temp_dest)?;
+                copied = true;
+                break;
+            }
+        }
+
+        if !copied {
+            return Err(format!(
+                "Installed skill directory not found under known locations (expected ~/.agents/skills/{0})",
+                safe_name
+            ));
+        }
+
+        let final_dest = store_dir.join(&safe_name);
+        let _ = remove_dir_if_exists(&final_dest);
+
+        if let Err(_e) = fs::rename(&temp_dest, &final_dest) {
+            copy_dir_all(&temp_dest, &final_dest)?;
+            let _ = fs::remove_dir_all(&temp_dest);
+        }
+
+        let now = now_iso();
+
+        Ok(Skill {
+            id: skill_id,
+            name: safe_name,
+            source_url: Some(repo_url),
+            enabled_agents,
+            last_sync: Some(now.clone()),
+            last_update: Some(now),
+        })
     })
+    .await
+    .map_err(|e| format!("reinstall_skill task join error: {e}"))?
 }
 
 #[tauri::command]

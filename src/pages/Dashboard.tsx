@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
   const agents = useAgentStore(state => state.agents);
   const setSyncModalOpen = useUIStore((state) => state.setSyncModalOpen);
-  const setDevModalOpen = useUIStore((state) => state.setDevModalOpen);
+  const setUpdateAllModalOpen = useUIStore((state) => state.setUpdateAllModalOpen);
   const openDistributionModal = useUIStore((state) => state.openDistributionModal);
   
   const [search, setSearch] = useState('');
@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleUpdateAll = () => {
-    setDevModalOpen(true);
+    setUpdateAllModalOpen(true);
   };
 
   return (

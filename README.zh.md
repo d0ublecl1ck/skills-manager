@@ -94,3 +94,7 @@ cd src-tauri && cargo test
 ## 贡献
 
 欢迎提 Issue / PR。也欢迎在 X 上晒你的工作流和技能库截图，让更多人少折腾。
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=d0ublecl1ck/skills-manager&type=date&legend=top-left)](https://www.star-history.com/#d0ublecl1ck/skills-manager&type=date&legend=top-left)

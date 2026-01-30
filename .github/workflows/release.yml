@@ -73,13 +73,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Decide whether to publish latest (master only)
+        id: gate
+        if: github.ref == 'refs/heads/master'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_LABEL: release
+        run: bun scripts/release/gate-latest.ts
+
       - name: Download bundles
         uses: actions/download-artifact@v4
         with:
           path: dist
 
       - name: Update latest tag (master only)
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' && steps.gate.outputs.publish_latest == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -87,7 +100,7 @@ jobs:
           git push origin -f latest
 
       - name: Publish latest (master only)
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master' && steps.gate.outputs.publish_latest == 'true'
         uses: ncipollo/release-action@v1
         with:
           tag: latest

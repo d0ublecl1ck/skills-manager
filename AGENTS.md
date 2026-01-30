@@ -1,0 +1,1 @@
+- Create a pull request and add the `release` label only when publishing; do not add the `release` label otherwise.

@@ -90,3 +90,7 @@ cd src-tauri && cargo test
 ## Contributing
 
 Issues and PRs are welcome.
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=d0ublecl1ck/skills-manager&type=date&legend=top-left)](https://www.star-history.com/#d0ublecl1ck/skills-manager&type=date&legend=top-left)

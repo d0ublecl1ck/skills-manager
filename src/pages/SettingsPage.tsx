@@ -1,7 +1,9 @@
 
 import React, { useState } from 'react';
-import { Info, Folder, RotateCcw, Download, Trash2, CheckCircle2, Clock } from 'lucide-react';
+import { invoke } from '@tauri-apps/api/core';
+import { Info, Folder, RotateCcw, Download, Trash2, CheckCircle2, Clock, Loader2 } from 'lucide-react';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { useToastStore } from '../stores/useToastStore';
 import { resetStore } from '../services/skillService';
 import {
   AlertDialog,
@@ -19,16 +21,61 @@ const SettingsPage: React.FC = () => {
   const {
     storagePath,
     setStoragePath,
-    resetSettings,
     recycleBinRetentionDays,
     setRecycleBinRetentionDays,
   } = useSettingsStore();
+  const addToast = useToastStore((s) => s.addToast);
   const [isSaved, setIsSaved] = useState(false);
+  const [pendingStoragePath, setPendingStoragePath] = useState<string | null>(null);
+  const [isConfirmMigrationOpen, setIsConfirmMigrationOpen] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
 
-  const handlePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStoragePath(e.target.value);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 2000);
+  const requestMigration = (nextPath: string) => {
+    const trimmed = nextPath.trim();
+    if (!trimmed) {
+      addToast('路径不能为空', 'error');
+      return;
+    }
+    if (trimmed === storagePath.trim()) return;
+
+    setPendingStoragePath(trimmed);
+    setIsConfirmMigrationOpen(true);
+  };
+
+  const handlePickStoragePath = async () => {
+    if (isMigrating) return;
+
+    try {
+      const selected = await invoke<string | null>('select_manager_store_directory');
+      if (!selected) return;
+      requestMigration(selected);
+    } catch (e) {
+      console.error(e);
+      addToast(`打开文件夹选择器失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error', 5000);
+    }
+  };
+
+  const handleConfirmMigration = async () => {
+    if (!pendingStoragePath) return;
+
+    setIsMigrating(true);
+    try {
+      await invoke('migrate_manager_store', {
+        fromStoragePath: storagePath,
+        toStoragePath: pendingStoragePath,
+      });
+      setStoragePath(pendingStoragePath);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
+      addToast('中心库迁移完成', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast(`中心库迁移失败: ${e instanceof Error ? e.message : '未知错误'}`, 'error', 6000);
+    } finally {
+      setIsMigrating(false);
+      setIsConfirmMigrationOpen(false);
+      setPendingStoragePath(null);
+    }
   };
 
   const handleRetentionChange = (value: number) => {
@@ -50,6 +97,61 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20">
+      {isMigrating && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-md animate-in fade-in duration-200" />
+          <div className="relative w-full max-w-sm bg-white vercel-border rounded-2xl shadow-[0_32px_64px_rgba(0,0,0,0.1)] overflow-hidden">
+            <div className="p-6 flex items-center gap-3">
+              <Loader2 size={18} className="text-black animate-spin" />
+              <div className="space-y-1">
+                <div className="text-[14px] font-bold text-black">正在迁移中心库…</div>
+                <div className="text-[12px] text-slate-500">请勿关闭程序，等待文件移动完成。</div>
+              </div>
+            </div>
+            <div className="h-1 bg-slate-100">
+              <div className="h-full bg-black animate-pulse w-2/5" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <AlertDialog open={isConfirmMigrationOpen} onOpenChange={setIsConfirmMigrationOpen}>
+        <AlertDialogContent className="vercel-border bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-black">确认迁移中心库？</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500">
+              将把当前中心库目录内的文件移动到新目录。此过程可能需要一些时间。
+            </AlertDialogDescription>
+            <div className="mt-1 space-y-1 text-[12px]">
+              <div>
+                <span className="text-slate-400">当前：</span>
+                <span className="mono text-black">{storagePath}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">目标：</span>
+                <span className="mono text-black">{pendingStoragePath ?? ''}</span>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="vercel-border"
+              disabled={isMigrating}
+              onClick={() => setPendingStoragePath(null)}
+            >
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-black text-white hover:bg-slate-800"
+              disabled={isMigrating}
+              onClick={() => void handleConfirmMigration()}
+            >
+              {isMigrating ? '迁移中...' : '确认迁移'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="space-y-1">
         <h2 className="text-[32px] font-bold text-black tracking-tight">项目设置</h2>
         <p className="text-slate-500 text-[15px]">管理您的技能库数据存储和系统核心配置。</p>
@@ -84,8 +186,9 @@ const SettingsPage: React.FC = () => {
                 <input 
                   type="text" 
                   value={storagePath}
-                  onChange={handlePathChange}
-                  className="bg-transparent border-none focus:ring-0 text-[13px] mono text-black w-full placeholder-slate-400"
+                  readOnly
+                  onClick={() => void handlePickStoragePath()}
+                  className="bg-transparent border-none focus:ring-0 text-[13px] mono text-black w-full placeholder-slate-400 cursor-pointer"
                   placeholder="例如: ~/.skillsm"
                   aria-label="本地中心库路径"
                   name="managerStorePath"
@@ -95,10 +198,10 @@ const SettingsPage: React.FC = () => {
               </div>
               <button 
                 onClick={() => {
-                  resetSettings();
-                  setIsSaved(true);
-                  setTimeout(() => setIsSaved(false), 2000);
+                  const next = '~/.skillsm';
+                  requestMigration(next);
                 }}
+                disabled={isMigrating}
                 className="px-4 py-2 bg-white border border-[#eaeaea] hover:border-black rounded-lg text-slate-500 hover:text-black transition-all flex items-center gap-2 text-[13px] font-semibold shadow-sm"
                 title="恢复默认路径"
               >

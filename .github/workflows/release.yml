@@ -2,6 +2,8 @@ name: Release (Tauri)
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
   workflow_dispatch:
@@ -55,7 +57,7 @@ jobs:
       - name: Upload bundles (job artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: tauri-bundle-${{ matrix.os }}
+          name: tauri-bundle-${{ matrix.os }}-${{ github.ref_name }}
           path: |
             src-tauri/target/release/bundle/**
           if-no-files-found: error
@@ -66,13 +68,44 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout (for tagging)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download bundles
         uses: actions/download-artifact@v4
         with:
           path: dist
 
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
+      - name: Update latest tag (master only)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f latest "${GITHUB_SHA}"
+          git push origin -f latest
+
+      - name: Publish latest (master only)
+        if: github.ref == 'refs/heads/master'
+        uses: ncipollo/release-action@v1
         with:
-          files: dist/**/*
-          generate_release_notes: true
+          tag: latest
+          name: Latest
+          prerelease: false
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: dist/**/*
+          generateReleaseNotes: true
+
+      - name: Publish versioned release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          prerelease: false
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: dist/**/*
+          generateReleaseNotes: true

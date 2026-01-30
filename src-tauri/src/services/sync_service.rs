@@ -278,7 +278,7 @@ fn sync_one_skill(
 }
 
 #[tauri::command]
-pub(crate) fn sync_skill_distribution(
+pub(crate) async fn sync_skill_distribution(
     skill_id: String,
     skill_name: String,
     enabled_agents: Vec<String>,
@@ -286,8 +286,12 @@ pub(crate) fn sync_skill_distribution(
     storage_path: String,
 ) -> Result<(), String> {
     let _ = skill_id;
-    let store_root = manager_store_root(&storage_path)?;
-    sync_one_skill(&store_root, &skill_name, &enabled_agents, &agents)
+    tauri::async_runtime::spawn_blocking(move || {
+        let store_root = manager_store_root(&storage_path)?;
+        sync_one_skill(&store_root, &skill_name, &enabled_agents, &agents)
+    })
+    .await
+    .map_err(|e| format!("sync_skill_distribution task join error: {e}"))?
 }
 
 #[tauri::command]

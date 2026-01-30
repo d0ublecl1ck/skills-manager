@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
 import type { Skill } from "./types";
+import { useSkillStore } from "./stores/useSkillStore";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
@@ -18,6 +19,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 describe("App", () => {
   afterEach(() => {
     cleanup();
+    useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
   });
 
   it("renders dashboard and can install a skill via tauri invoke", async () => {
@@ -148,7 +150,7 @@ describe("App", () => {
     expect(unlisten).toHaveBeenCalled();
   });
 
-  it("opens dev modal when clicking update all", async () => {
+  it("opens update-all modal and updates installed skills", async () => {
     window.location.hash = "#/";
     window.localStorage.setItem(
       "settings-manager-storage-v1",
@@ -158,8 +160,32 @@ describe("App", () => {
       }),
     );
 
+    useSkillStore.getState().setSkills([
+      {
+        id: "skill-1",
+        name: "Alpha Skill",
+        sourceUrl: "github.com/foo/alpha",
+        enabledAgents: ["codex" as never],
+        installSource: "platform",
+        isAdopted: true,
+        lastSync: "2026-01-23T00:00:00Z",
+        lastUpdate: "2026-01-23T00:00:00Z",
+      },
+    ]);
+
     vi.mocked(invoke).mockImplementation((cmd) => {
       if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "reinstall_skill") {
+        return Promise.resolve({
+          id: "skill-1",
+          name: "Alpha Skill",
+          sourceUrl: "github.com/foo/alpha",
+          enabledAgents: ["codex"],
+          lastSync: "2026-01-24T00:00:00Z",
+          lastUpdate: "2026-01-24T00:00:00Z",
+        } as unknown as never);
+      }
+      if (cmd === "sync_skill_distribution") return Promise.resolve(undefined as never);
       return Promise.resolve(undefined as never);
     });
 
@@ -167,9 +193,23 @@ describe("App", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByRole("button", { name: "更新全库" }));
-    expect(await screen.findByText("正在开发中")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "更新全库" })).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "我知道了" }));
-    expect(screen.queryByText("正在开发中")).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "完成" }, { timeout: 4000 }),
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(vi.mocked(invoke)).toHaveBeenCalledWith("reinstall_skill", {
+        skillId: "skill-1",
+        skillName: "Alpha Skill",
+        repoUrl: "github.com/foo/alpha",
+        enabledAgents: ["codex"],
+        storagePath: "~/.skillsm",
+      });
+    });
+
+    await user.click(screen.getByRole("button", { name: "完成" }));
+    expect(screen.queryByRole("heading", { name: "更新全库" })).not.toBeInTheDocument();
   });
 });

@@ -35,16 +35,30 @@ If you use multiple tools (Codex / Claude Code / Cursor / Cline / Amp / Antigrav
 
 ## Supported agents & default directories
 
-| Agent | Default skills directory |
-|---|---|
-| Codex | `~/.codex/skills/` (also `~/.codex/skills/.system/`) |
-| Claude Code | `~/.claude/skills/` |
-| Cursor | `~/.cursor/skills/` |
-| Cline | `~/.cline/skills/` |
-| OpenCode | `~/.opencode/skill/` |
-| Copilot | `~/.copilot/skills/` |
-| Amp | `~/.agents/skills/` |
-| Antigravity | `~/.agent/skills/` |
+Skills Manager supports both **global** skills directories (in your home directory) and **project** skills directories (inside a repo). Defaults below reflect the built-in platform registry and can be changed in the app.
+
+| Agent | Global skills directory (default) | Project skills directory (default) |
+|---|---|---|
+| Amp | `~/.config/agents/skills/` | `.agents/skills/` |
+| Antigravity | `~/.gemini/antigravity/skills/` | `.agent/skills/` |
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| Clawdbot | `~/.clawdbot/skills/` | `skills/` |
+| Cline | `~/.cline/skills/` | `.cline/skills/` |
+| CodeBuddy | `~/.codebuddy/skills/` | `.codebuddy/skills/` |
+| Codex | `~/.codex/skills/`<br/>`~/.codex/skills/.system/` | `.codex/skills/` |
+| GitHub Copilot | `~/.copilot/skills/` | `.github/skills/` |
+| Cursor | `~/.cursor/skills/` | `.cursor/skills/` |
+| Droid | `~/.factory/skills/` | `.factory/skills/` |
+| Gemini CLI | `~/.gemini/skills/` | `.gemini/skills/` |
+| Goose | `~/.config/goose/skills/` | `.goose/skills/` |
+| Kilo Code | `~/.kilocode/skills/` | `.kilocode/skills/` |
+| Kiro CLI | `~/.kiro/skills/` | `.kiro/skills/` |
+| OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` |
+| Qoder | `~/.qoder/skills/` | `.qoder/skills/` |
+| Qwen Code | `~/.qwen/skills/` | `.qwen/skills/` |
+| Roo Code | `~/.roo/skills/` | `.roo/skills/` |
+| Trae | `~/.trae/skills/` | `.trae/skills/` |
+| Windsurf | `~/.codeium/windsurf/skills/` | `.windsurf/skills/` |
 
 > All paths are configurable in the app.
 
@@ -57,17 +71,21 @@ If you use multiple tools (Codex / Claude Code / Cursor / Cline / Amp / Antigrav
 - Tauri platform prerequisites (WebView / build toolchain)
 
 ```bash
-# install deps
+# install deps (choose one)
 bun install
+# npm ci
 
 # start desktop dev
 bun run tauri dev
+# npm run tauri dev
 
 # run tests
 bun run test
+# npm run test
 
 # build frontend
 bun run build
+# npm run build
 ```
 
 Rust tests:

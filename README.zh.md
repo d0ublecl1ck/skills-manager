@@ -39,16 +39,30 @@
 
 ## 支持的平台与默认目录
 
-| 平台 | 默认 skills 目录 |
-|---|---|
-| Codex | `~/.codex/skills/`（以及 `~/.codex/skills/.system/`） |
-| Claude Code | `~/.claude/skills/` |
-| Cursor | `~/.cursor/skills/` |
-| Cline | `~/.cline/skills/` |
-| OpenCode | `~/.opencode/skill/` |
-| Copilot | `~/.copilot/skills/` |
-| Amp | `~/.agents/skills/` |
-| Antigravity | `~/.agent/skills/` |
+Skills Manager 同时支持 **全局目录**（一般在 home 目录下）与 **项目目录**（一般在某个仓库内）。下面的默认值来自内置平台注册表，且都可以在 App 内修改。
+
+| 平台 | 全局 skills 目录（默认） | 项目 skills 目录（默认） |
+|---|---|---|
+| Amp | `~/.config/agents/skills/` | `.agents/skills/` |
+| Antigravity | `~/.gemini/antigravity/skills/` | `.agent/skills/` |
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| Clawdbot | `~/.clawdbot/skills/` | `skills/` |
+| Cline | `~/.cline/skills/` | `.cline/skills/` |
+| CodeBuddy | `~/.codebuddy/skills/` | `.codebuddy/skills/` |
+| Codex | `~/.codex/skills/`<br/>`~/.codex/skills/.system/` | `.codex/skills/` |
+| GitHub Copilot | `~/.copilot/skills/` | `.github/skills/` |
+| Cursor | `~/.cursor/skills/` | `.cursor/skills/` |
+| Droid | `~/.factory/skills/` | `.factory/skills/` |
+| Gemini CLI | `~/.gemini/skills/` | `.gemini/skills/` |
+| Goose | `~/.config/goose/skills/` | `.goose/skills/` |
+| Kilo Code | `~/.kilocode/skills/` | `.kilocode/skills/` |
+| Kiro CLI | `~/.kiro/skills/` | `.kiro/skills/` |
+| OpenCode | `~/.config/opencode/skills/` | `.opencode/skills/` |
+| Qoder | `~/.qoder/skills/` | `.qoder/skills/` |
+| Qwen Code | `~/.qwen/skills/` | `.qwen/skills/` |
+| Roo Code | `~/.roo/skills/` | `.roo/skills/` |
+| Trae | `~/.trae/skills/` | `.trae/skills/` |
+| Windsurf | `~/.codeium/windsurf/skills/` | `.windsurf/skills/` |
 
 > 以上路径都可以在 App 内修改。
 
@@ -61,17 +75,21 @@
 - 你的系统需要满足 Tauri 的平台依赖（WebView/构建工具链等）
 
 ```bash
-# 安装依赖
+# 安装依赖（任选一个包管理器）
 bun install
+# npm ci
 
 # 启动桌面端开发模式
 bun run tauri dev
+# npm run tauri dev
 
 # 运行测试
 bun run test
+# npm run test
 
 # 构建前端
 bun run build
+# npm run build
 ```
 
 Rust 侧单测：

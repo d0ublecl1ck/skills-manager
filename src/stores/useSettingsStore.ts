@@ -15,7 +15,7 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       storagePath: '~/.skillsm',
-      hasCompletedOnboarding: false,
+      hasCompletedOnboarding: true,
       recycleBinRetentionDays: 15,
       setStoragePath: (path) => set({ storagePath: path }),
       setHasCompletedOnboarding: (completed) => set({ hasCompletedOnboarding: completed }),
@@ -23,10 +23,17 @@ export const useSettingsStore = create<SettingsState>()(
       resetSettings: () =>
         set({
           storagePath: '~/.skillsm',
-          hasCompletedOnboarding: false,
+          hasCompletedOnboarding: true,
           recycleBinRetentionDays: 15,
         }),
     }),
-    { name: 'settings-manager-storage-v1' },
+    {
+      name: 'settings-manager-storage-v1',
+      version: 1,
+      migrate: (persisted) => {
+        if (!persisted || typeof persisted !== 'object') return persisted as never;
+        return { ...(persisted as object), hasCompletedOnboarding: true } as never;
+      },
+    },
   ),
 );

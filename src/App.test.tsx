@@ -20,6 +20,7 @@ describe("App", () => {
   afterEach(() => {
     cleanup();
     useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
+    window.sessionStorage.clear();
   });
 
   it("renders dashboard and can install a skill via tauri invoke", async () => {
@@ -43,6 +44,7 @@ describe("App", () => {
 
     vi.mocked(invoke).mockImplementation((cmd) => {
       if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "sync_all_to_manager_store") return Promise.resolve([] as unknown as never);
       if (cmd === "install_skill_cli") return Promise.resolve(installedSkill as unknown as never);
       return Promise.resolve(undefined as never);
     });
@@ -104,6 +106,7 @@ describe("App", () => {
 
     vi.mocked(invoke).mockImplementation((cmd, args) => {
       if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "sync_all_to_manager_store") return Promise.resolve([] as unknown as never);
       if (cmd === "sync_all_to_manager_store_with_progress") {
         expect(args).toEqual({
           agents: expect.arrayContaining([
@@ -175,6 +178,7 @@ describe("App", () => {
 
     vi.mocked(invoke).mockImplementation((cmd) => {
       if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "sync_all_to_manager_store") return Promise.resolve([] as unknown as never);
       if (cmd === "reinstall_skill") {
         return Promise.resolve({
           id: "skill-1",
@@ -211,5 +215,47 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "完成" }));
     expect(screen.queryByRole("heading", { name: "更新全库" })).not.toBeInTheDocument();
+  });
+
+  it("auto-imports untracked skills on startup (adds only missing)", async () => {
+    window.location.hash = "#/";
+    window.localStorage.setItem(
+      "settings-manager-storage-v1",
+      JSON.stringify({
+        state: { storagePath: "~/.skillsm", hasCompletedOnboarding: true },
+        version: 1,
+      }),
+    );
+
+    useSkillStore.setState({
+      skills: [{ id: "existing", name: "Existing", enabledAgents: [] }],
+      recycleBin: [
+        { id: "deleted", name: "Deleted", enabledAgents: [], deletedAt: "2026-01-23T00:00:00Z" },
+      ],
+      logs: [],
+    });
+
+    const syncedSkills: Skill[] = [
+      { id: "Existing", name: "Existing", enabledAgents: [] },
+      { id: "Deleted", name: "Deleted", enabledAgents: [] },
+      { id: "New Skill", name: "New Skill", enabledAgents: [] },
+    ];
+
+    vi.mocked(invoke).mockImplementation((cmd) => {
+      if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "sync_all_to_manager_store") return Promise.resolve(syncedSkills as unknown as never);
+      return Promise.resolve(undefined as never);
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(useSkillStore.getState().skills.map((s) => s.name)).toContain("New Skill");
+    });
+
+    const state = useSkillStore.getState();
+    expect(state.skills.map((s) => s.name).sort()).toEqual(["Existing", "New Skill"].sort());
+    expect(state.recycleBin.map((s) => s.name)).toEqual(["Deleted"]);
+    expect(state.logs[0]).toMatchObject({ action: "sync", skillId: "启动扫描", status: "success" });
   });
 });

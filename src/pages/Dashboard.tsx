@@ -1,14 +1,17 @@
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useAgentStore } from '../stores/useAgentStore';
 import SkillCard from '../components/SkillCard';
 import { PLATFORM_ICONS } from '../constants';
 import { AgentId } from '../types';
-import { ArrowUpDown, CheckCheck, RefreshCw, Search } from 'lucide-react';
+import { ArrowUpDown, CheckCheck, LayoutGrid, List, RefreshCw, Search } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 
 type SortOption = 'sync_desc' | 'sync_asc' | 'name_asc' | 'name_desc';
+type ViewMode = 'grid' | 'list';
+
+const DASHBOARD_VIEW_MODE_STORAGE_KEY = 'skills-manager:dashboard-view-mode';
 
 const Dashboard: React.FC = () => {
   const skills = useSkillStore(state => state.skills);
@@ -20,6 +23,22 @@ const Dashboard: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<AgentId | 'all'>('all');
   const [sortBy, setSortBy] = useState<SortOption>('sync_desc');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const savedViewMode = localStorage.getItem(DASHBOARD_VIEW_MODE_STORAGE_KEY);
+      return savedViewMode === 'list' ? 'list' : 'grid';
+    } catch {
+      return 'grid';
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DASHBOARD_VIEW_MODE_STORAGE_KEY, viewMode);
+    } catch {
+      // ignore
+    }
+  }, [viewMode]);
 
   const enabledAgents = useMemo(() => agents.filter(a => a.enabled), [agents]);
 
@@ -69,6 +88,10 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateAll = () => {
     setUpdateAllModalOpen(true);
+  };
+
+  const handleViewModeChange = (nextViewMode: ViewMode) => {
+    setViewMode(nextViewMode);
   };
 
   return (
@@ -154,6 +177,39 @@ const Dashboard: React.FC = () => {
                 </svg>
               </div>
             </div>
+
+            <div role="group" aria-label="视图模式" className="inline-flex items-center gap-1 rounded-lg border border-[#eaeaea] bg-white p-1">
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('grid')}
+                aria-label="网格视图"
+                aria-pressed={viewMode === 'grid'}
+                className={`flex items-center gap-1 rounded-md px-2.5 py-2 text-[12px] font-semibold transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-black text-white'
+                    : 'text-slate-500 hover:text-black hover:bg-slate-50'
+                }`}
+                title="网格视图"
+              >
+                <LayoutGrid size={14} />
+                <span className="hidden sm:inline">网格</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeChange('list')}
+                aria-label="列表视图"
+                aria-pressed={viewMode === 'list'}
+                className={`flex items-center gap-1 rounded-md px-2.5 py-2 text-[12px] font-semibold transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-black text-white'
+                    : 'text-slate-500 hover:text-black hover:bg-slate-50'
+                }`}
+                title="列表视图"
+              >
+                <List size={14} />
+                <span className="hidden sm:inline">列表</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -195,9 +251,18 @@ const Dashboard: React.FC = () => {
       </div>
 
       {filteredAndSortedSkills.length > 0 ? (
-        <div key={sortBy} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+        <div
+          key={sortBy}
+          data-testid="skills-container"
+          data-view-mode={viewMode}
+          className={`animate-in fade-in duration-300 ${
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+              : 'grid grid-cols-1 gap-4'
+          }`}
+        >
           {filteredAndSortedSkills.map(skill => (
-            <SkillCard key={skill.id} skill={skill} />
+            <SkillCard key={skill.id} skill={skill} viewMode={viewMode} />
           ))}
         </div>
       ) : (

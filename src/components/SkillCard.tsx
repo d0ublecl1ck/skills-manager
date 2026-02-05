@@ -23,6 +23,7 @@ import {
 
 interface SkillCardProps {
   skill: Skill;
+  viewMode?: 'grid' | 'list';
 }
 
 const DESCRIPTION_CACHE = new Map<string, string>();
@@ -44,7 +45,7 @@ const getSkillSourceLabel = (sourceUrl?: string) => {
   }
 };
 
-const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
+const SkillCard: React.FC<SkillCardProps> = ({ skill, viewMode = 'grid' }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showAdoptModal, setShowAdoptModal] = useState(false);
   const [descriptionFromMd, setDescriptionFromMd] = useState<string | null>(() => {
@@ -63,11 +64,13 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     if (typeof skill.isAdopted === 'boolean') return skill.isAdopted;
     return (skill.installSource ?? 'platform') === 'platform';
   }, [skill.installSource, skill.isAdopted, skill.sourceUrl]);
+  const isCompact = viewMode === 'list';
 
   const sourceLabel = useMemo(() => getSkillSourceLabel(skill.sourceUrl), [skill.sourceUrl]);
   const showSourceLabel = isAdopted && Boolean(skill.sourceUrl);
 
   useEffect(() => {
+    if (isCompact) return;
     if (skill.description) return;
     if (DESCRIPTION_CACHE.has(skill.name)) {
       setDescriptionFromMd(DESCRIPTION_CACHE.get(skill.name) ?? null);
@@ -87,7 +90,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     return () => {
       cancelled = true;
     };
-  }, [skill.name, skill.description]);
+  }, [isCompact, skill.name, skill.description]);
 
   const handleToggleAgent = (agentId: AgentId, agentName: string) => {
     const isCurrentlyEnabled = skill.enabledAgents.includes(agentId);
@@ -118,8 +121,143 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
     }
   };
 
+  if (isCompact) {
+    return (
+      <div
+        data-testid="skill-card"
+        data-layout="compact"
+        className={`vercel-card bg-white p-3.5 flex flex-col gap-3 group hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ${!isAdopted ? 'border-dashed' : ''}`}
+      >
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-[14px] font-bold text-black tracking-tight leading-tight truncate" data-testid="skill-name">
+              {skill.name}
+            </h3>
+            <div className="mt-1 flex items-center gap-1.5 text-[10px] min-w-0">
+              {isAdopted ? (
+                <span className="inline-flex items-center gap-1 text-slate-400 font-bold uppercase tracking-tight">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                  Managed
+                </span>
+              ) : (
+                <span className="inline-block px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 rounded font-bold whitespace-nowrap">
+                  外部识别
+                </span>
+              )}
+              {showSourceLabel && (
+                <span className="text-slate-400 font-medium truncate">来自 {sourceLabel}</span>
+              )}
+            </div>
+          </div>
+
+          <div
+            data-testid="compact-agent-switches"
+            data-scrollable="true"
+            className="min-w-0 flex-1 max-w-[240px] overflow-x-auto scrollbar-hide"
+          >
+            <div className="w-max flex items-center gap-1.5 pr-1">
+              {enabledAgentsInSystem.map((agent) => {
+                const BrandIcon = PLATFORM_ICONS[agent.id];
+                const isEnabled = skill.enabledAgents.includes(agent.id);
+                return (
+                  <button
+                    key={agent.id}
+                    onClick={() => handleToggleAgent(agent.id, agent.name)}
+                    className={`
+                      relative w-8 h-8 rounded-lg border flex items-center justify-center transition-all duration-200 active:scale-95
+                      ${isEnabled ? 'border-black bg-white shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'border-[#eaeaea] bg-[#fafafa] grayscale opacity-40 hover:opacity-100 hover:grayscale-0 hover:border-[#ccc] hover:bg-white'}
+                    `}
+                    title={agent.name}
+                    aria-pressed={isEnabled}
+                    aria-label={`${agent.name}${isEnabled ? '（已启用）' : '（未启用）'}`}
+                  >
+                    <div className={`transition-transform duration-200 ${isEnabled ? 'scale-100' : 'scale-90'}`}>
+                      <BrandIcon size={16} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="shrink-0 flex items-center gap-1">
+            <button
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              className={`p-1.5 text-slate-400 hover:text-black hover:bg-slate-50 rounded-md transition-all ${isUpdating ? 'animate-spin opacity-50' : 'active:scale-90'}`}
+              title={isAdopted ? '检查并执行更新' : '绑定来源后开启自动更新'}
+              aria-label={isAdopted ? '检查并执行更新' : '绑定来源后开启自动更新'}
+            >
+              <RefreshCcw size={14} />
+            </button>
+
+            {!isAdopted && (
+              <button
+                onClick={() => setShowAdoptModal(true)}
+                className="p-1.5 text-slate-500 hover:text-black hover:bg-slate-50 rounded-md transition-all active:scale-90"
+                title="绑定来源"
+                aria-label="绑定来源"
+              >
+                <Link2 size={14} />
+              </button>
+            )}
+
+            {skill.sourceUrl && (
+              <a
+                href={skill.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#999] hover:text-black transition-colors p-1.5 rounded-md hover:bg-slate-50"
+                title="查看原始仓库"
+                aria-label="查看原始仓库"
+              >
+                <ExternalLink size={14} />
+              </a>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-all active:scale-90"
+                  title="移动到垃圾箱"
+                  aria-label="移动到垃圾箱"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="vercel-border bg-white">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-black">移入垃圾箱？</AlertDialogTitle>
+                  <AlertDialogDescription className="text-slate-500">
+                    将把 <span className="mono text-black">{skill.name}</span> 移入垃圾箱，并从所有已启用平台目录移除。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="vercel-border">取消</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 text-white hover:bg-red-700"
+                    onClick={() => {
+                      removeSkill(skill.id);
+                      addToast(`"${skill.name}" 已移入垃圾箱`, 'success');
+                    }}
+                  >
+                    移入垃圾箱
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        <AdoptSkillModal isOpen={showAdoptModal} onClose={() => setShowAdoptModal(false)} skill={skill} />
+      </div>
+    );
+  }
+
   return (
     <div
+      data-testid="skill-card"
+      data-layout="default"
       className={`vercel-card bg-white p-6 flex flex-col h-full group hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 ${!isAdopted ? 'border-dashed' : ''}`}
     >
       <div className="flex justify-between items-start mb-4">
@@ -196,10 +334,12 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
               key={agent.id}
               onClick={() => handleToggleAgent(agent.id, agent.name)}
               className={`
-                relative w-10 h-10 rounded-lg border flex items-center justify-center transition-all duration-200 active:scale-95
+                relative rounded-lg border flex items-center justify-center transition-all duration-200 active:scale-95
+                w-10 h-10
                 ${isEnabled ? 'border-black bg-white shadow-[0_2px_10px_rgba(0,0,0,0.06)]' : 'border-[#eaeaea] bg-[#fafafa] grayscale opacity-30 hover:opacity-100 hover:grayscale-0 hover:border-[#ccc] hover:bg-white'}
               `}
               title={agent.name}
+              aria-pressed={isEnabled}
               aria-label={`${agent.name}${isEnabled ? '（已启用）' : '（未启用）'}`}
             >
               <div className={`transition-transform duration-200 ${isEnabled ? 'scale-100' : 'scale-90'}`}>
@@ -234,6 +374,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
             <a
               href={skill.sourceUrl}
               target="_blank"
+              rel="noopener noreferrer"
               className="text-[#999] hover:text-black transition-colors p-1"
               title="查看原始仓库"
             >

@@ -142,4 +142,54 @@ describe('SkillCard', () => {
     expect(useToastStore.getState().toasts[0]?.message).toBe('"demo-skill" 已移入垃圾箱');
     expect(useSkillStore.getState().recycleBin.some((s) => s.id === 's1')).toBe(true);
   });
+
+  it('列表视图使用三段式紧凑布局并启用平台开关滚动容器', async () => {
+    const manyAgents: AgentInfo[] = [
+      ...TEST_AGENTS,
+      {
+        id: AgentId.CLAUDE_CODE,
+        name: 'Claude Code',
+        defaultPath: '~/.claude/skills/',
+        currentPath: '~/.claude/skills/',
+        enabled: true,
+        icon: 'claudecode',
+      },
+      {
+        id: AgentId.CURSOR,
+        name: 'Cursor',
+        defaultPath: '~/.cursor/rules/',
+        currentPath: '~/.cursor/rules/',
+        enabled: true,
+        icon: 'cursor',
+      },
+      {
+        id: AgentId.CLINE,
+        name: 'Cline',
+        defaultPath: '~/.cline/skills/',
+        currentPath: '~/.cline/skills/',
+        enabled: true,
+        icon: 'cline',
+      },
+    ];
+    useAgentStore.setState({ agents: manyAgents });
+
+    const skill: Skill = {
+      id: 'compact-layout',
+      name: 'Compact Layout Skill',
+      enabledAgents: [AgentId.CODEX, AgentId.CLAUDE_CODE],
+      installSource: 'platform',
+      isAdopted: true,
+    };
+
+    render(<SkillCard skill={skill} viewMode="list" />);
+
+    const card = screen.getByTestId('skill-card');
+    expect(card).toHaveAttribute('data-layout', 'compact');
+    expect(screen.getByText('Managed')).toBeTruthy();
+
+    const switches = screen.getByTestId('compact-agent-switches');
+    expect(switches).toHaveAttribute('data-scrollable', 'true');
+    expect(switches.className).toContain('max-w-[240px]');
+    expect(switches.className).toContain('overflow-x-auto');
+  });
 });

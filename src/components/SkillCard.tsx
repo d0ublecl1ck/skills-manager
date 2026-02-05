@@ -183,7 +183,7 @@ const SkillCard: React.FC<SkillCardProps> = ({ skill }) => {
         </div>
       </div>
 
-      <p className="text-[13px] text-[#666] leading-relaxed mb-6 flex-1 line-clamp-2">
+      <p className="text-[13px] text-[#666] leading-relaxed mb-6 flex-1 line-clamp-2 pb-0.5">
         {skill.description || descriptionFromMd || '暂无描述'}
       </p>
 

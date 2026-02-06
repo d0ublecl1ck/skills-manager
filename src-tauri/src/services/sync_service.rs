@@ -5,7 +5,8 @@ use std::path::{Path, PathBuf};
 use tauri::Emitter;
 
 use crate::models::{
-    AgentInfo, Skill, SyncAllSkillsDistributionProgressLog, SyncAllToManagerProgressLog,
+    AgentInfo, Skill, StartupDetectedSkill, SyncAllSkillsDistributionProgressLog,
+    SyncAllToManagerProgressLog,
 };
 use crate::utils::{
     agent_roots, copy_dir_all, ensure_dir, manager_store_root, now_iso, remove_dir_if_exists,
@@ -566,6 +567,186 @@ fn sync_all_to_manager_store_inner(
     }
 }
 
+fn collect_untracked_skills(
+    store_root: &Path,
+    agents: &[AgentInfo],
+) -> Result<BTreeMap<String, BTreeSet<String>>, String> {
+    let mut tracked: BTreeSet<String> = BTreeSet::new();
+    for entry in fs::read_dir(store_root)
+        .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("Failed to read file type: {e}"))?;
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.is_empty() || name.starts_with('.') {
+            continue;
+        }
+        tracked.insert(safe_skill_dir_name(&name));
+    }
+
+    let mut untracked: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
+    for agent in agents {
+        for agent_root in agent_roots(agent) {
+            if !agent_root.exists() || !agent_root.is_dir() {
+                continue;
+            }
+            for skill_root in find_skill_roots(&agent_root) {
+                let name = skill_root
+                    .file_name()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                if name.is_empty() || name.starts_with('.') {
+                    continue;
+                }
+
+                let key = safe_skill_dir_name(&name);
+                if tracked.contains(&key) {
+                    continue;
+                }
+
+                untracked.entry(key).or_default().insert(agent.id.clone());
+            }
+        }
+    }
+
+    Ok(untracked)
+}
+
+#[tauri::command]
+pub(crate) fn detect_startup_untracked_skills(
+    agents: Vec<AgentInfo>,
+    storage_path: String,
+) -> Result<Vec<StartupDetectedSkill>, String> {
+    println!(
+        "[startup-detect] request storage_path={} agents={} ",
+        storage_path,
+        agents
+            .iter()
+            .map(|agent| format!("{}:{}", agent.id, agent.current_path))
+            .collect::<Vec<_>>()
+            .join(" | ")
+    );
+    let store_root = manager_store_root(&storage_path)?;
+
+    let agent_name_by_id: BTreeMap<String, String> = agents
+        .iter()
+        .map(|agent| (agent.id.clone(), agent.name.clone()))
+        .collect();
+
+    let untracked = collect_untracked_skills(&store_root, &agents)?;
+    let mut detected: Vec<StartupDetectedSkill> = vec![];
+
+    for (name, source_agent_ids_set) in untracked {
+        let source_agent_ids: Vec<String> = source_agent_ids_set.into_iter().collect();
+        let source_agent_names: Vec<String> = source_agent_ids
+            .iter()
+            .map(|id| {
+                agent_name_by_id
+                    .get(id)
+                    .cloned()
+                    .unwrap_or_else(|| id.clone())
+            })
+            .collect();
+
+        detected.push(StartupDetectedSkill {
+            id: name.clone(),
+            name,
+            source_agent_ids,
+            source_agent_names,
+        });
+    }
+
+    println!(
+        "[startup-detect] result store_root={} detected_count={} sample={} ",
+        store_root.display(),
+        detected.len(),
+        detected
+            .iter()
+            .take(8)
+            .map(|skill| skill.name.clone())
+            .collect::<Vec<_>>()
+            .join(" | ")
+    );
+
+    Ok(detected)
+}
+
+#[tauri::command]
+pub(crate) fn sync_selected_skills_to_manager_store(
+    agents: Vec<AgentInfo>,
+    skill_names: Vec<String>,
+    storage_path: String,
+) -> Result<Vec<Skill>, String> {
+    if skill_names.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let selected: BTreeSet<String> = skill_names
+        .iter()
+        .map(|name| safe_skill_dir_name(name))
+        .collect();
+
+    let store_root = manager_store_root(&storage_path)?;
+    let mut found: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+
+    for agent in agents.iter() {
+        for agent_root in agent_roots(agent) {
+            if !agent_root.exists() || !agent_root.is_dir() {
+                continue;
+            }
+
+            for skill_root in find_skill_roots(&agent_root) {
+                let name = skill_root
+                    .file_name()
+                    .map(|s| s.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                if name.is_empty() || name.starts_with('.') {
+                    continue;
+                }
+
+                let key = safe_skill_dir_name(&name);
+                if !selected.contains(&key) {
+                    continue;
+                }
+
+                let dst = store_root.join(&key);
+                if !dst.exists() || should_replace_skill_dir(&skill_root, &dst) {
+                    copy_dir_all(&skill_root, &dst)?;
+                }
+
+                found.entry(key).or_default().insert(agent.id.clone());
+            }
+        }
+    }
+
+    let now = now_iso();
+    let mut synced: Vec<Skill> = vec![];
+    for name in found.keys() {
+        let enabled_agents = found
+            .get(name)
+            .map(|s| s.iter().cloned().collect())
+            .unwrap_or_else(Vec::new);
+
+        synced.push(Skill {
+            id: name.clone(),
+            name: name.clone(),
+            source_url: None,
+            enabled_agents,
+            last_sync: Some(now.clone()),
+            last_update: Some(now.clone()),
+        });
+    }
+
+    Ok(synced)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -776,5 +957,65 @@ mod tests {
             extract_description_from_skill_md(md),
             Some("line1\nline2".to_string())
         );
+    }
+
+    #[test]
+    fn detect_startup_untracked_skills_does_not_copy_to_store() {
+        let tmp = temp_test_dir("startup-detect-no-copy");
+        let store_root = tmp.join("store");
+        let codex_root = tmp.join("codex");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&codex_root).unwrap();
+
+        write_file(
+            &codex_root.join("new-skill").join("SKILL.md"),
+            "---\nname: new-skill\n---\n",
+        );
+
+        let agents = vec![agent("codex", "Codex", &codex_root, true)];
+        let detected =
+            detect_startup_untracked_skills(agents, store_root.to_string_lossy().to_string())
+                .unwrap();
+
+        assert_eq!(detected.len(), 1);
+        assert_eq!(detected[0].name, "new-skill");
+        assert!(store_root.join("new-skill").is_dir() == false);
+
+        let _ = fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn sync_selected_skills_to_manager_store_only_syncs_selected() {
+        let tmp = temp_test_dir("sync-selected-only");
+        let store_root = tmp.join("store");
+        let codex_root = tmp.join("codex");
+
+        ensure_dir(&store_root).unwrap();
+        ensure_dir(&codex_root).unwrap();
+
+        write_file(
+            &codex_root.join("alpha").join("SKILL.md"),
+            "---\nname: alpha\n---\n",
+        );
+        write_file(
+            &codex_root.join("beta").join("SKILL.md"),
+            "---\nname: beta\n---\n",
+        );
+
+        let agents = vec![agent("codex", "Codex", &codex_root, true)];
+        let synced = sync_selected_skills_to_manager_store(
+            agents,
+            vec!["alpha".to_string()],
+            store_root.to_string_lossy().to_string(),
+        )
+        .unwrap();
+
+        assert_eq!(synced.len(), 1);
+        assert_eq!(synced[0].name, "alpha");
+        assert!(store_root.join("alpha").join("SKILL.md").exists());
+        assert!(!store_root.join("beta").join("SKILL.md").exists());
+
+        let _ = fs::remove_dir_all(&tmp);
     }
 }

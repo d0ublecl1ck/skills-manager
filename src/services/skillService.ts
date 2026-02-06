@@ -2,8 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import type { AgentInfo, Skill } from '../types';
 import { storagePath } from './storagePath';
 
-export const bootstrapSkillsStore = async (skills: Skill[]) => {
-  await invoke('bootstrap_skills_store', { skills, storagePath: storagePath() });
+export const bootstrapSkillsStore = async (skills: Skill[]): Promise<Skill[]> => {
+  return await invoke<Skill[]>('bootstrap_skills_store', { skills, storagePath: storagePath() });
 };
 
 export const installSkill = async (repoUrl: string): Promise<Skill> => {

@@ -8,7 +8,9 @@ use services::skill_service::{
 };
 use services::storage_service::{migrate_manager_store, select_manager_store_directory};
 use services::sync_service::{
+    detect_startup_untracked_skills,
     get_skill_description,
+    sync_selected_skills_to_manager_store,
     sync_all_skills_distribution, sync_all_skills_distribution_with_progress,
     sync_all_to_manager_store, sync_all_to_manager_store_with_progress, sync_skill_distribution,
 };
@@ -29,6 +31,8 @@ pub fn run() {
             sync_all_skills_distribution_with_progress,
             sync_all_to_manager_store,
             sync_all_to_manager_store_with_progress,
+            detect_startup_untracked_skills,
+            sync_selected_skills_to_manager_store,
             get_skill_description,
             uninstall_skill,
             reset_store,

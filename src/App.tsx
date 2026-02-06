@@ -10,59 +10,98 @@ import OnboardingModal from './components/OnboardingModal';
 import ToastHost from './components/ToastHost';
 import DistributionModal from './components/DistributionModal';
 import { bootstrapSkillsStore } from './services/skillService';
-import { syncAllToManagerStore } from './services/syncService';
+import { detectStartupUntrackedSkills } from './services/syncService';
+import { getEffectiveAgents } from './services/effectiveAgents';
 import { useAgentStore } from './stores/useAgentStore';
 import { useSettingsStore } from './stores/useSettingsStore';
 import { useSkillStore } from './stores/useSkillStore';
-
-const STARTUP_SCAN_SESSION_KEY = 'skills-manager:startup-scan';
+import { useUIStore } from './stores/useUIStore';
+import StartupDetectModal from './components/StartupDetectModal';
 
 const App: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
 
-    bootstrapSkillsStore(useSkillStore.getState().skills).catch(console.error);
-
-    // 启动自动扫描：把 Agent 中新增但未纳入管理的技能复制到中心库，并加入列表。
+    // 启动自动检测：发现 Agent 新技能后弹窗勾选，同步到中心库。
     void (async () => {
-      try {
-        if (sessionStorage.getItem(STARTUP_SCAN_SESSION_KEY) === '1') return;
-        sessionStorage.setItem(STARTUP_SCAN_SESSION_KEY, '1');
-      } catch {
-        // ignore
-      }
-
       try {
         const settings = useSettingsStore.getState();
         if (!settings.hasCompletedOnboarding) {
           settings.setHasCompletedOnboarding(true);
         }
 
-        const agents = useAgentStore.getState().agents;
-        const synced = await syncAllToManagerStore(agents);
+        const storage = settings.storagePath;
+        const currentSkills = useSkillStore.getState().skills;
+        const hydratedSkills = await bootstrapSkillsStore(currentSkills);
         if (cancelled) return;
 
-        const { skills, recycleBin, mergeSkills, addLog } = useSkillStore.getState();
-        const tracked = new Set(
-          [...skills, ...recycleBin].map((s) => s.name.trim().toLowerCase()),
-        );
-        const untracked = synced.filter((s) => !tracked.has(s.name.trim().toLowerCase()));
-        if (untracked.length === 0) return;
-
-        mergeSkills(untracked);
-        addLog({
+        useSkillStore.getState().setSkills(hydratedSkills);
+        const bootstrapSample = hydratedSkills.slice(0, 8).map((skill) => skill.name).join('、');
+        console.info('[startup-detect] bootstrap', {
+          storage,
+          hydratedCount: hydratedSkills.length,
+          sampleSkills: hydratedSkills.slice(0, 8).map((skill) => skill.name),
+        });
+        useSkillStore.getState().addLog({
           action: 'sync',
-          skillId: '启动扫描',
+          skillId: '启动检测调试',
           status: 'success',
-          message: `启动扫描发现 ${untracked.length} 个未纳入技能，已复制到中心库并加入管理。`,
+          message: `中心库加载完成: storage=${storage}; loaded=${hydratedSkills.length}${bootstrapSample ? `; sample=${bootstrapSample}` : ''}`,
+        });
+
+        const agents = getEffectiveAgents(useAgentStore.getState().agents);
+        const agentSummary = agents
+          .map((agent) => `${agent.id}:${agent.currentPath}`)
+          .join(' | ');
+
+        console.info('[startup-detect] begin', {
+          storage,
+          agents: agents.map((agent) => ({
+            id: agent.id,
+            currentPath: agent.currentPath,
+            defaultPath: agent.defaultPath,
+          })),
+        });
+        useSkillStore.getState().addLog({
+          action: 'sync',
+          skillId: '启动检测调试',
+          status: 'success',
+          message: `启动检测开始: storage=${storage}; agents=${agentSummary}`,
+        });
+
+        const detected = await detectStartupUntrackedSkills(agents);
+        if (cancelled) return;
+
+        const sampleSkills = detected.slice(0, 8).map((skill) => skill.name).join('、');
+        console.info('[startup-detect] done', {
+          storage,
+          detectedCount: detected.length,
+          sampleSkills: detected.slice(0, 8).map((skill) => skill.name),
+        });
+        useSkillStore.getState().addLog({
+          action: 'sync',
+          skillId: '启动检测调试',
+          status: 'success',
+          message: `启动检测结果: detected=${detected.length}${sampleSkills ? `; sample=${sampleSkills}` : ''}`,
+        });
+
+        if (detected.length === 0) return;
+
+        useUIStore.getState().openStartupDetectModal(detected);
+
+        useSkillStore.getState().addLog({
+          action: 'sync',
+          skillId: '启动检测',
+          status: 'success',
+          message: `启动检测发现 ${detected.length} 个新技能，等待确认同步。`,
         });
       } catch (e) {
         console.error(e);
         useSkillStore.getState().addLog({
           action: 'sync',
-          skillId: '启动扫描',
+          skillId: '启动检测',
           status: 'error',
-          message: `启动扫描失败: ${e instanceof Error ? e.message : '未知错误'}`,
+          message: `启动检测失败: ${e instanceof Error ? e.message : '未知错误'}`,
         });
       }
     })();
@@ -85,6 +124,7 @@ const App: React.FC = () => {
       </Layout>
       <OnboardingModal />
       <DistributionModal />
+      <StartupDetectModal />
       <ToastHost />
     </Router>
   );

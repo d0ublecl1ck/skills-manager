@@ -46,6 +46,13 @@ export interface Skill {
   deletedAt?: string;
 }
 
+export interface StartupDetectedSkill {
+  id: string;
+  name: string;
+  sourceAgentIds: AgentId[];
+  sourceAgentNames: string[];
+}
+
 export interface OperationLog {
   id: string;
   timestamp: string;

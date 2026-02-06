@@ -90,6 +90,10 @@ const Dashboard: React.FC = () => {
     setUpdateAllModalOpen(true);
   };
 
+  const handleAddSkill = () => {
+    window.location.hash = '#/marketplace';
+  };
+
   const handleViewModeChange = (nextViewMode: ViewMode) => {
     setViewMode(nextViewMode);
   };
@@ -118,7 +122,11 @@ const Dashboard: React.FC = () => {
             <RefreshCw size={14} className="opacity-40" />
             更新全库
           </button>
-          <button className="bg-black border border-black hover:bg-white hover:text-black text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]">
+          <button
+            type="button"
+            onClick={handleAddSkill}
+            className="bg-black border border-black hover:bg-white hover:text-black text-white px-5 py-2 rounded-lg text-[13px] font-semibold transition-all shadow-[0_4px_14px_0_rgba(0,0,0,0.1)]"
+          >
             添加技能
           </button>
         </div>

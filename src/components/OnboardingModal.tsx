@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { useSettingsStore } from '../stores/useSettingsStore';
 import { useSkillStore } from '../stores/useSkillStore';
 import { useAgentStore } from '../stores/useAgentStore';
-import { syncAllToManagerStore } from '../services/syncService';
+import { detectStartupUntrackedSkills, syncSelectedSkillsToManagerStore } from '../services/syncService';
+import { getEffectiveAgents } from '../services/effectiveAgents';
 import { Zap, Search, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 const OnboardingModal: React.FC = () => {
@@ -20,7 +21,12 @@ const OnboardingModal: React.FC = () => {
     const startedAt = Date.now();
 
     try {
-      const skills = await syncAllToManagerStore(agents);
+      const effectiveAgents = getEffectiveAgents(agents);
+      const detected = await detectStartupUntrackedSkills(effectiveAgents);
+      const skills = await syncSelectedSkillsToManagerStore(
+        effectiveAgents,
+        detected.map((skill) => skill.name),
+      );
       const elapsed = Date.now() - startedAt;
       const remaining = Math.max(0, 2500 - elapsed);
 

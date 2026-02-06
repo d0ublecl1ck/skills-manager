@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import type { AgentId } from '../types';
+import type { StartupDetectedSkill } from '../types';
 
 interface UIState {
   isFeedbackModalOpen: boolean;
@@ -16,6 +17,10 @@ interface UIState {
   distributionAgentName: string;
   openDistributionModal: (agentId: AgentId, agentName: string) => void;
   closeDistributionModal: () => void;
+  isStartupDetectModalOpen: boolean;
+  startupDetectedSkills: StartupDetectedSkill[];
+  openStartupDetectModal: (skills: StartupDetectedSkill[]) => void;
+  closeStartupDetectModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -33,4 +38,10 @@ export const useUIStore = create<UIState>((set) => ({
   openDistributionModal: (agentId: AgentId, agentName: string) =>
     set({ isDistributionModalOpen: true, distributionAgentId: agentId, distributionAgentName: agentName }),
   closeDistributionModal: () => set({ isDistributionModalOpen: false, distributionAgentId: null, distributionAgentName: '' }),
+  isStartupDetectModalOpen: false,
+  startupDetectedSkills: [],
+  openStartupDetectModal: (skills: StartupDetectedSkill[]) =>
+    set({ isStartupDetectModalOpen: true, startupDetectedSkills: skills }),
+  closeStartupDetectModal: () =>
+    set({ isStartupDetectModalOpen: false, startupDetectedSkills: [] }),
 }));

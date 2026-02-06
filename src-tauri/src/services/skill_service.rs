@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -131,24 +132,88 @@ fn candidate_post_install_sources(skill_dir_name: &str) -> Vec<PathBuf> {
     .collect()
 }
 
+fn read_store_skill_names(store_root: &Path) -> Result<Vec<String>, String> {
+    let mut names: Vec<String> = vec![];
+
+    for entry in fs::read_dir(store_root)
+        .map_err(|e| format!("Failed to read manager store {}: {e}", store_root.display()))?
+    {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {e}"))?;
+        let file_type = entry
+            .file_type()
+            .map_err(|e| format!("Failed to read file type: {e}"))?;
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let name = entry.file_name().to_string_lossy().to_string();
+        if name.is_empty() || name.starts_with('.') {
+            continue;
+        }
+
+        names.push(safe_skill_dir_name(&name));
+    }
+
+    names.sort();
+    names.dedup();
+    Ok(names)
+}
+
 #[tauri::command]
 pub(crate) fn bootstrap_skills_store(
     skills: Vec<Skill>,
     storage_path: String,
-) -> Result<(), String> {
+) -> Result<Vec<Skill>, String> {
     let dir = manager_store_root(&storage_path)?;
 
-    for skill in skills {
-        let skill_dir = dir.join(safe_skill_dir_name(&skill.name));
-        if skill_dir.exists() {
-            continue;
+    let store_has_skills = !read_store_skill_names(&dir)?.is_empty();
+
+    // 兼容旧版本：仅在中心库为空时，才根据已持久化状态补齐目录。
+    if !store_has_skills {
+        for skill in &skills {
+            let skill_dir = dir.join(safe_skill_dir_name(&skill.name));
+            if skill_dir.exists() {
+                continue;
+            }
+            ensure_dir(&skill_dir)?;
+            let skill_md = format!("# {}\n", skill.name);
+            let _ = fs::write(skill_dir.join("SKILL.md"), skill_md);
         }
-        ensure_dir(&skill_dir)?;
-        let skill_md = format!("# {}\n", skill.name);
-        let _ = fs::write(skill_dir.join("SKILL.md"), skill_md);
     }
 
-    Ok(())
+    let now = now_iso();
+    let existing_by_name: BTreeMap<String, Skill> = skills
+        .into_iter()
+        .map(|skill| (safe_skill_dir_name(&skill.name), skill))
+        .collect();
+
+    let mut merged: Vec<Skill> = vec![];
+    for name in read_store_skill_names(&dir)? {
+        if let Some(existing) = existing_by_name.get(&name) {
+            let mut hydrated = existing.clone();
+            hydrated.id = name.clone();
+            hydrated.name = name;
+            if hydrated.last_sync.is_none() {
+                hydrated.last_sync = Some(now.clone());
+            }
+            if hydrated.last_update.is_none() {
+                hydrated.last_update = Some(now.clone());
+            }
+            merged.push(hydrated);
+            continue;
+        }
+
+        merged.push(Skill {
+            id: name.clone(),
+            name,
+            source_url: None,
+            enabled_agents: vec![],
+            last_sync: Some(now.clone()),
+            last_update: Some(now.clone()),
+        });
+    }
+
+    Ok(merged)
 }
 
 #[tauri::command]
@@ -358,6 +423,16 @@ pub(crate) fn reset_store(storage_path: String) -> Result<(), String> {
 mod tests {
     use super::*;
 
+    fn temp_test_dir(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!("skills-manager-{name}-{}", generate_id()))
+    }
+
+    fn write_skill(store_root: &Path, name: &str) {
+        let dir = store_root.join(name);
+        ensure_dir(&dir).expect("create skill dir");
+        fs::write(dir.join("SKILL.md"), format!("# {name}\n")).expect("write SKILL.md");
+    }
+
     #[test]
     fn normalize_install_url_normalizes_github_urls() {
         assert_eq!(
@@ -384,5 +459,55 @@ mod tests {
         let sources = candidate_post_install_sources("demo-skill");
         assert_eq!(sources.len(), 1);
         assert!(sources[0].to_string_lossy().contains("/.agents/skills/demo-skill"));
+    }
+
+    #[test]
+    fn bootstrap_skills_store_hydrates_from_existing_store_first() {
+        let root = temp_test_dir("bootstrap-existing");
+        let _ = fs::remove_dir_all(&root);
+        ensure_dir(&root).unwrap();
+
+        write_skill(&root, "fastapi");
+
+        let existing_state = vec![Skill {
+            id: "old-id".to_string(),
+            name: "legacy-skill".to_string(),
+            source_url: Some("https://example.com/legacy".to_string()),
+            enabled_agents: vec!["codex".to_string()],
+            last_sync: None,
+            last_update: None,
+        }];
+
+        let hydrated = bootstrap_skills_store(existing_state, root.to_string_lossy().to_string()).unwrap();
+
+        assert_eq!(hydrated.len(), 1);
+        assert_eq!(hydrated[0].name, "fastapi");
+        assert!(root.join("legacy-skill").exists() == false);
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn bootstrap_skills_store_seeds_when_store_is_empty() {
+        let root = temp_test_dir("bootstrap-empty");
+        let _ = fs::remove_dir_all(&root);
+        ensure_dir(&root).unwrap();
+
+        let existing_state = vec![Skill {
+            id: "skill-1".to_string(),
+            name: "seeded-skill".to_string(),
+            source_url: None,
+            enabled_agents: vec![],
+            last_sync: None,
+            last_update: None,
+        }];
+
+        let hydrated = bootstrap_skills_store(existing_state, root.to_string_lossy().to_string()).unwrap();
+
+        assert_eq!(hydrated.len(), 1);
+        assert_eq!(hydrated[0].name, "seeded-skill");
+        assert!(root.join("seeded-skill").join("SKILL.md").exists());
+
+        let _ = fs::remove_dir_all(&root);
     }
 }

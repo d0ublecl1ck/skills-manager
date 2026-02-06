@@ -17,6 +17,17 @@ pub(crate) struct Skill {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub(crate) struct StartupDetectedSkill {
+    pub(crate) id: String,
+    pub(crate) name: String,
+    #[serde(default)]
+    pub(crate) source_agent_ids: Vec<String>,
+    #[serde(default)]
+    pub(crate) source_agent_names: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct AgentInfo {
     pub(crate) id: String,
     pub(crate) name: String,

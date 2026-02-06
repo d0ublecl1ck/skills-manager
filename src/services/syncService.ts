@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { AgentInfo, Skill } from '../types';
+import type { AgentInfo, Skill, StartupDetectedSkill } from '../types';
 import { storagePath } from './storagePath';
 
 export const syncSkillDistribution = async (skill: Skill, agents: AgentInfo[]) => {
@@ -43,6 +43,26 @@ export const syncAllSkillsDistributionWithProgress = async (
 
 export const syncAllToManagerStore = async (agents: AgentInfo[]): Promise<Skill[]> => {
   return await invoke<Skill[]>('sync_all_to_manager_store', { agents, storagePath: storagePath() });
+};
+
+export const detectStartupUntrackedSkills = async (
+  agents: AgentInfo[],
+): Promise<StartupDetectedSkill[]> => {
+  return await invoke<StartupDetectedSkill[]>('detect_startup_untracked_skills', {
+    agents,
+    storagePath: storagePath(),
+  });
+};
+
+export const syncSelectedSkillsToManagerStore = async (
+  agents: AgentInfo[],
+  skillNames: string[],
+): Promise<Skill[]> => {
+  return await invoke<Skill[]>('sync_selected_skills_to_manager_store', {
+    agents,
+    skillNames,
+    storagePath: storagePath(),
+  });
 };
 
 export type SyncAllToManagerProgressLog = {

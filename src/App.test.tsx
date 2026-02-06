@@ -80,6 +80,32 @@ describe("App", () => {
     expect(repoInput).toHaveValue("");
   });
 
+  it("navigates to marketplace when clicking dashboard add-skill button", async () => {
+    window.location.hash = "#/";
+    window.localStorage.setItem(
+      "settings-manager-storage-v1",
+      JSON.stringify({
+        state: { storagePath: "~/.skillsm", hasCompletedOnboarding: true },
+        version: 0,
+      }),
+    );
+
+    vi.mocked(invoke).mockImplementation((cmd) => {
+      if (cmd === "bootstrap_skills_store") return Promise.resolve(undefined as never);
+      if (cmd === "sync_all_to_manager_store") return Promise.resolve([] as unknown as never);
+      return Promise.resolve(undefined as never);
+    });
+
+    render(<App />);
+    const user = userEvent.setup();
+
+    expect(screen.getByRole("heading", { name: "技能库" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "添加技能" }));
+
+    expect(await screen.findByRole("heading", { name: "安装新技能" })).toBeInTheDocument();
+  });
+
   it("opens sync modal and runs sync-all with progress events", async () => {
     window.location.hash = "#/";
     window.localStorage.setItem(

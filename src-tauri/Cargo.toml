@@ -1,8 +1,10 @@
 [package]
 name = "skills-manager"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "A local skills control plane for AI coding agents: scan, centralize, and toggle copy-based distribution across agents."
+authors = ["d0ublecl1ck"]
+license = "MIT"
+repository = "https://github.com/d0ublecl1ck/skills-manager"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

@@ -4,9 +4,19 @@
   <img src="./assets/banner.png" alt="Skills Manager banner" width="1200" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/d0ublecl1ck/skills-manager/releases/latest"><img src="https://img.shields.io/github/v/release/d0ublecl1ck/skills-manager?label=release" alt="Release" /></a>
+  <a href="https://github.com/d0ublecl1ck/skills-manager/releases"><img src="https://img.shields.io/github/downloads/d0ublecl1ck/skills-manager/total?label=downloads" alt="Downloads" /></a>
+  <a href="https://github.com/d0ublecl1ck/skills-manager/actions/workflows/pr-build.yml"><img src="https://github.com/d0ublecl1ck/skills-manager/actions/workflows/pr-build.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platform" />
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
+</p>
+
+**One store for every agent's skills — copy-based distribution, no symlinks, fully reversible.**
+
 A local “skills control plane” for AI coding agents: scan, centralize, and toggle distribution across tools.
 
-[中文说明](README.zh.md)
+[中文说明](README.zh.md) · [Download](#download--install) · [How it works](#how-it-works-high-level) · [Supported agents](#supported-agents--default-directories) · [Development](#development)
 
 ## What it does
 
@@ -22,6 +32,24 @@ A local “skills control plane” for AI coding agents: scan, centralize, and t
 <p align="center">
   <img src="./assets/demo.gif" alt="Skills Manager demo" width="900" />
 </p>
+
+## Download & Install
+
+Installers are published on the [Releases page](https://github.com/d0ublecl1ck/skills-manager/releases/latest). Pick the file for your platform:
+
+| OS | File | Notes |
+|---|---|---|
+| macOS (Apple Silicon) | `skills-manager_<version>_aarch64.dmg` | Open the DMG, drag the app into Applications |
+| Windows | `skills-manager_<version>_x64-setup.exe` / `.msi` | Unsigned build — SmartScreen may ask for confirmation |
+| Linux | `skills-manager_<version>_amd64.AppImage` / `.deb` / `.rpm` | `chmod +x` the AppImage before running it |
+
+Builds are **not code-signed or notarized**. On macOS, if Gatekeeper blocks the first launch, right-click the app → Open, or run:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/skills-manager.app"
+```
+
+The `latest` release tracks `master`: it is rebuilt and republished whenever a release PR merges.
 
 ## Why you might want this
 
@@ -112,3 +140,7 @@ Issues and PRs are welcome.
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=d0ublecl1ck/skills-manager&type=date&legend=top-left)](https://www.star-history.com/#d0ublecl1ck/skills-manager&type=date&legend=top-left)
+
+## License
+
+[MIT](./LICENSE)

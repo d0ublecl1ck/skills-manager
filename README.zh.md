@@ -4,9 +4,19 @@
   <img src="./assets/banner.png" alt="Skills Manager 横幅" width="1200" />
 </p>
 
+<p align="center">
+  <a href="https://github.com/d0ublecl1ck/skills-manager/releases/latest"><img src="https://img.shields.io/github/v/release/d0ublecl1ck/skills-manager?label=release" alt="Release" /></a>
+  <a href="https://github.com/d0ublecl1ck/skills-manager/releases"><img src="https://img.shields.io/github/downloads/d0ublecl1ck/skills-manager/total?label=downloads" alt="下载量" /></a>
+  <a href="https://github.com/d0ublecl1ck/skills-manager/actions/workflows/pr-build.yml"><img src="https://github.com/d0ublecl1ck/skills-manager/actions/workflows/pr-build.yml/badge.svg" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="平台" />
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License" /></a>
+</p>
+
+**一个中心库管所有 agent 的 skill——复制式分发，不写符号链接，删装完全可逆。**
+
 本地多 Agent Skills 管理器：一键搜集、统一管理、按平台分发开关。
 
-[English](README.md)
+[English](README.md) · [下载](#下载与安装) · [它是怎么工作的](#它是怎么工作的) · [支持的平台](#支持的平台与默认目录) · [开发与运行](#开发与运行)
 
 > 适合同时使用 Codex / Claude Code / Cursor / Cline / Amp / Antigravity / OpenCode / Copilot 等工具的人。
 
@@ -23,6 +33,24 @@
 <p align="center">
   <img src="./assets/demo.gif" alt="Skills Manager 演示" width="900" />
 </p>
+
+## 下载与安装
+
+安装包在 [Releases 页面](https://github.com/d0ublecl1ck/skills-manager/releases/latest)，按平台选对应文件：
+
+| 系统 | 文件 | 说明 |
+|---|---|---|
+| macOS（Apple Silicon） | `skills-manager_<version>_aarch64.dmg` | 打开 DMG，把应用拖进「应用程序」 |
+| Windows | `skills-manager_<version>_x64-setup.exe` / `.msi` | 未签名构建，SmartScreen 可能提示确认 |
+| Linux | `skills-manager_<version>_amd64.AppImage` / `.deb` / `.rpm` | AppImage 需先 `chmod +x` 再运行 |
+
+构建产物**未做代码签名与公证**。macOS 首次启动若被 Gatekeeper 拦截，右键应用 → 打开，或执行：
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/skills-manager.app"
+```
+
+`latest` 版本跟随 `master`：每次 release PR 合并后都会重新构建并覆盖发布。
 
 ## 亮点
 
@@ -116,3 +144,7 @@ cd src-tauri && cargo test
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=d0ublecl1ck/skills-manager&type=date&legend=top-left)](https://www.star-history.com/#d0ublecl1ck/skills-manager&type=date&legend=top-left)
+
+## License
+
+[MIT](./LICENSE)

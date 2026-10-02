@@ -115,6 +115,13 @@ bun run tauri dev
 bun run test
 # npm run test
 
+# 门禁：任何被跟踪文件泄露个人绝对路径即失败
+bun run guard:paths
+# npm run guard:paths
+
+# 由 remotion/ 里的 Remotion 合成重新渲染演示 GIF
+npm run demo:render
+
 # 构建前端
 bun run build
 # npm run build

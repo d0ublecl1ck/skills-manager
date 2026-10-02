@@ -111,6 +111,13 @@ bun run tauri dev
 bun run test
 # npm run test
 
+# guard: fail if a tracked file leaks a personal absolute path
+bun run guard:paths
+# npm run guard:paths
+
+# re-render the demo GIF from the Remotion composition
+npm run demo:render
+
 # build frontend
 bun run build
 # npm run build

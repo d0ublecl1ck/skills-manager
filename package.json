@@ -9,6 +9,8 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "download:platform-icons": "node scripts/download-platform-icons.mjs",
+    "guard:paths": "vitest run scripts/guards",
+    "demo:render": "npm i --no-save --no-package-lock remotion@4.0.532 @remotion/cli@4.0.532 && npx remotion render remotion/index.ts SkillsManagerDemo assets/demo.gif --codec=gif",
     "test": "vitest run",
     "test:watch": "vitest"
   },

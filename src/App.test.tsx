@@ -417,7 +417,7 @@ describe("App", () => {
       "settings-manager-storage-v1",
       JSON.stringify({
         state: {
-          storagePath: "/Users/d0ublecl1ck/d0ublecl1ck_pkm/备份/skillsm",
+          storagePath: "/tmp/skills-manager-test-store",
           hasCompletedOnboarding: true,
         },
         version: 1,
@@ -426,7 +426,7 @@ describe("App", () => {
 
     useSkillStore.setState({ skills: [], recycleBin: [], logs: [] });
     useSettingsStore.setState({
-      storagePath: "/Users/d0ublecl1ck/d0ublecl1ck_pkm/备份/skillsm",
+      storagePath: "/tmp/skills-manager-test-store",
       hasCompletedOnboarding: true,
       recycleBinRetentionDays: 15,
     });
@@ -457,7 +457,7 @@ describe("App", () => {
       expect(vi.mocked(invoke).mock.calls.some(([cmd, args]) => {
         if (cmd !== "bootstrap_skills_store") return false;
         const payload = args as { storagePath?: string; skills?: unknown[] };
-        return payload.storagePath === "/Users/d0ublecl1ck/d0ublecl1ck_pkm/备份/skillsm" && Array.isArray(payload.skills);
+        return payload.storagePath === "/tmp/skills-manager-test-store" && Array.isArray(payload.skills);
       })).toBe(true);
     });
 

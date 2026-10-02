@@ -123,9 +123,6 @@ jobs:
             dist/**/*.AppImage
             dist/**/*.deb
             dist/**/*.rpm
-            dist/**/*.tar.gz
-            dist/**/*.sig
-            dist/**/*.zip
           removeArtifacts: true
           generateReleaseNotes: true
 
